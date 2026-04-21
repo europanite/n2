@@ -100,6 +100,17 @@ jobs:
           cp -a frontend/app/public/. frontend/app/web-build/
           touch frontend/app/web-build/.nojekyll
 
+      - name: Verify deployed resources
+        run: |
+          set -euo pipefail
+          echo "=== public ==="
+          find frontend/app/public -maxdepth 3 -type f | sort
+          echo "=== web-build ==="
+          find frontend/app/web-build -maxdepth 3 -type f | sort
+
+          test -f frontend/app/public/latest.json
+          test -f frontend/app/web-build/latest.json
+
       - name: Configure Pages
         uses: actions/configure-pages@v5
 
