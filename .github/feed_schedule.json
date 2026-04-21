@@ -1,0 +1,73 @@
+{
+  "timezone": "Asia/Tokyo",
+  "weekday_groups": {
+    "weekday": [1, 2, 3, 4, 5],
+    "weekend": [6, 7]
+  },
+  "profiles": {
+    "weekday": {
+      "weekdays": "weekday",
+      "windows": [
+        {
+          "name": "morning",
+          "start_hour": 7,
+          "end_hour": 9,
+          "slot": "restaurant"
+        },
+        {
+          "name": "midday",
+          "start_hour": 12,
+          "end_hour": 13,
+          "slot_by_weekday": {
+            "1": "restaurant",
+            "2": "spot_intro",
+            "3": "restaurant",
+            "4": "spot_intro",
+            "5": "restaurant"
+          }
+        },
+        {
+          "name": "night",
+          "start_hour": 20,
+          "end_hour": 22,
+          "slot": "spot_intro"
+        }
+      ]
+    },
+    "weekend": {
+      "weekdays": "weekend",
+      "windows": [
+        {
+          "name": "morning",
+          "start_hour": 10,
+          "end_hour": 11,
+          "slot": "restaurant"
+        },
+        {
+          "name": "midday",
+          "start_hour": 15,
+          "end_hour": 17,
+          "slot_by_weekday": {
+            "6": "restaurant",
+            "7": "spot_intro"
+          }
+        },
+        {
+          "name": "night1",
+          "start_hour": 18,
+          "end_hour": 20,
+          "slot": "event"
+        },
+        {
+          "name": "night2",
+          "start_hour": 20,
+          "end_hour": 22,
+          "slot_by_weekday": {
+            "6": "spot_intro",
+            "7": "cheatsheet"
+          }
+        }
+      ]
+    }
+  }
+}

@@ -1,0 +1,274 @@
+name: Ingest
+
+on:
+  workflow_dispatch:
+
+env:
+  RAG_CHROMA_SOURCE: ${{ vars.RAG_CHROMA_SOURCE }}
+  RAG_CHROMA_GDRIVE_URL: ${{ vars.RAG_SNAPSHOT_URL }}
+  RAG_CHROMA_S3_BUCKET: ${{ vars.AWS_S3_BUCKET_BACKUP }}
+  RAG_CHROMA_S3_PREFIX: rag/chroma
+  RAG_CHROMA_LOCAL_DIR: chroma_db_seed
+
+permissions:
+  contents: write
+  id-token: write
+
+concurrency:
+  group: ingest
+  cancel-in-progress: false
+
+jobs:
+  ingest:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Free disk space
+        run: |
+          set -eux
+          sudo rm -rf /usr/share/dotnet /opt/ghc /usr/local/lib/android
+          docker system prune -af || true
+          df -h
+
+      - name: Ensure pipeline scripts are executable
+        run: |
+          set -eux
+          chmod +x scripts/ingest.sh scripts/chroma_switch.py scripts/verify_ingest_state.py scripts/fetch_data_json_from_gdrive.py scripts/fetch_public_file.py
+
+      - name: Validate chroma source settings
+        env:
+          RAG_CHROMA_SOURCE: ${{ env.RAG_CHROMA_SOURCE }}
+          RAG_CHROMA_GDRIVE_URL: ${{ env.RAG_CHROMA_GDRIVE_URL }}
+          RAG_CHROMA_S3_BUCKET: ${{ env.RAG_CHROMA_S3_BUCKET }}
+          AWS_ROLE_ARN_SECRET: ${{ secrets.AWS_ROLE_ARN }}
+          AWS_REGION_VALUE: ${{ vars.AWS_REGION }}
+        run: |
+          set -euo pipefail
+          SOURCE="${RAG_CHROMA_SOURCE:-gdrive}"
+          case "$SOURCE" in
+            gdrive)
+              [ -n "${RAG_CHROMA_GDRIVE_URL:-}" ] || { echo "ERROR: vars.RAG_SNAPSHOT_URL is required when RAG_CHROMA_SOURCE=gdrive."; exit 1; }
+              ;;
+            s3)
+              [ -n "${AWS_REGION_VALUE:-}" ] || { echo "ERROR: vars.AWS_REGION is required when RAG_CHROMA_SOURCE=s3."; exit 1; }
+              [ -n "${AWS_ROLE_ARN_SECRET:-}" ] || { echo "ERROR: secrets.AWS_ROLE_ARN is required when RAG_CHROMA_SOURCE=s3."; exit 1; }
+              [ -n "${RAG_CHROMA_S3_BUCKET:-}" ] || { echo "ERROR: vars.AWS_S3_BUCKET_BACKUP is required when RAG_CHROMA_SOURCE=s3."; exit 1; }
+              ;;
+            local)
+              echo "Using local chroma seed directory: ${RAG_CHROMA_LOCAL_DIR:-chroma_db_seed}"
+              ;;
+            *)
+              echo "ERROR: unsupported RAG_CHROMA_SOURCE=$SOURCE"
+              exit 1
+              ;;
+          esac
+
+      - name: Configure AWS credentials via OIDC
+        if: ${{ env.RAG_CHROMA_SOURCE == 's3' }}
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-region: ${{ vars.AWS_REGION }}
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+
+      - name: Validate Google Drive data source settings
+        env:
+          DATA_JSON_URL_VALUE: ${{ vars.DATA_JSON_URL }}
+        run: |
+          set -euo pipefail
+          [ -n "${DATA_JSON_URL_VALUE:-}" ] || { echo "ERROR: vars.DATA_JSON_URL is required."; exit 1; }
+
+      - name: Fetch data.json from Google Drive
+        env:
+          DATA_JSON_URL: ${{ vars.DATA_JSON_URL }}
+        run: |
+          set -euo pipefail
+          mkdir -p data/json tmp/ingest-debug
+          python3 scripts/fetch_data_json_from_gdrive.py             --url "${DATA_JSON_URL}"             --out data/json/data.json | tee tmp/ingest-debug/fetch-data-json.txt
+          ls -lh data/json/data.json
+
+      - name: Validate data.json shape for ingest
+        run: |
+          set -euo pipefail
+          mkdir -p tmp/ingest-debug
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+
+          path = Path("data/json/data.json")
+          if not path.exists():
+              raise SystemExit(f"ERROR: {path} was not created")
+
+          raw = path.read_text(encoding="utf-8")
+          data = json.loads(raw)
+
+          if isinstance(data, dict):
+              docs = [data]
+          elif isinstance(data, list):
+              docs = data
+          else:
+              raise SystemExit(f"ERROR: data.json root must be an object or list, got {type(data).__name__}")
+
+          if not docs:
+              raise SystemExit("ERROR: data.json is empty")
+
+          valid = 0
+          first = docs[0]
+          for item in docs:
+              if isinstance(item, dict) and isinstance(item.get("id"), str) and item.get("id", "").strip() and isinstance(item.get("text"), str) and item.get("text", "").strip():
+                  valid += 1
+
+          summary = {
+              "path": str(path),
+              "root_type": type(data).__name__,
+              "doc_count": len(docs),
+              "valid_doc_count": valid,
+              "first_doc_keys": sorted(first.keys())[:20] if isinstance(first, dict) else None,
+              "first_doc_id": first.get("id") if isinstance(first, dict) else None,
+              "first_text_preview": (first.get("text") or "")[:160] if isinstance(first, dict) and isinstance(first.get("text"), str) else None,
+          }
+          print(json.dumps(summary, ensure_ascii=False, indent=2))
+          Path("tmp/ingest-debug/data-json-validate.json").write_text(
+              json.dumps(summary, ensure_ascii=False, indent=2),
+              encoding="utf-8",
+          )
+
+          if valid < 1:
+              raise SystemExit("ERROR: data.json contains no valid documents with non-empty 'id' and 'text'")
+          PY
+
+      - name: Debug docs directory before ingest
+        run: |
+          set -euo pipefail
+          mkdir -p tmp/ingest-debug
+          python3 scripts/verify_ingest_state.py docs \
+            --docs-dir data/json \
+            --sample-limit 10 | tee tmp/ingest-debug/docs-before-ingest.json
+
+      - name: Ingest (via shared pipeline script)
+        env:
+          RAG_AUTO_INDEX: "false"
+          RAG_REBUILD_ON_START: "false"
+          RAG_REINDEX_ENABLED: "true"
+          OLLAMA_TIMEOUT_S: "512"
+          OLLAMA_BASE_URL: "http://ollama:11434"
+          RAG_MODEL: "llama3.1:8b"
+          AUDIT_MODEL: "llama3.1:8b"
+          EMBEDDING_MODEL: "mxbai-embed-large"
+          REACT_NATIVE_PACKAGER_HOSTNAME: "127.0.0.1"
+          RAG_AUDIT: "0"
+          RAG_AUDIT_REWRITE: "0"
+          RAG_AUDIT_MAX_ATTEMPTS: "2"
+        run: |
+          set -euo pipefail
+          bash scripts/ingest.sh ingest --ci
+
+      - name: Show reindex response captured by ingest.sh
+        if: always()
+        run: |
+          set -euo pipefail
+          mkdir -p tmp/ingest-debug
+          {
+            echo "=== /tmp/reindex_headers.txt ==="
+            if [ -f /tmp/reindex_headers.txt ]; then
+              sed -n '1,200p' /tmp/reindex_headers.txt
+            else
+              echo "(missing)"
+            fi
+            echo
+            echo "=== /tmp/reindex_body.json ==="
+            if [ -f /tmp/reindex_body.json ]; then
+              sed -n '1,200p' /tmp/reindex_body.json
+              cp /tmp/reindex_body.json tmp/ingest-debug/reindex-body.json
+            else
+              echo "(missing)"
+            fi
+          } | tee tmp/ingest-debug/reindex-response.txt
+
+      - name: Verify chroma_db written
+        run: |
+          set -euo pipefail
+          echo "chroma_db file count:"
+          find chroma_db -type f | wc -l
+          echo "chroma_db size:"
+          du -sh chroma_db || true
+          echo "sample files:"
+          find chroma_db -type f | sed -n '1,30p'
+          n=$(find chroma_db -type f | wc -l)
+          if [ "$n" -lt 5 ]; then
+            echo "ERROR: chroma_db seems empty after reindex. Volume mapping is likely wrong."
+            exit 1
+          fi
+
+      - name: Debug chroma sqlite state before strict verify
+        if: always()
+        run: |
+          set -euo pipefail
+          mkdir -p tmp/ingest-debug
+          python3 scripts/verify_ingest_state.py chroma \
+            --chroma-dir chroma_db \
+            --collection-name documents | tee tmp/ingest-debug/chroma-after-ingest.json
+
+      - name: Verify live embeddings inside chroma_db
+        run: |
+          set -euo pipefail
+          python3 scripts/chroma_switch.py verify-local \
+            --chroma-dir chroma_db \
+            --collection-name documents \
+            --min-count 1
+
+      - name: Upload ingest debug artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ingest-debug-${{ github.run_id }}
+          path: tmp/ingest-debug
+          if-no-files-found: warn
+          retention-days: 7
+
+      - name: Package chroma_db artifact
+        run: |
+          set -euo pipefail
+          tar -C . -czf /tmp/chroma-db.tgz chroma_db
+
+      - name: Upload chroma_db artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: chroma-db
+          path: /tmp/chroma-db.tgz
+          if-no-files-found: error
+          retention-days: 7
+
+      - name: Publish verified chroma_db snapshot for selected source
+        env:
+          RAG_CHROMA_SOURCE: ${{ env.RAG_CHROMA_SOURCE }}
+          RAG_CHROMA_S3_BUCKET: ${{ env.RAG_CHROMA_S3_BUCKET }}
+          RAG_CHROMA_S3_PREFIX: ${{ env.RAG_CHROMA_S3_PREFIX }}
+        run: |
+          set -euo pipefail
+          python3 scripts/chroma_switch.py publish \
+            --source "${RAG_CHROMA_SOURCE:-gdrive}" \
+            --chroma-dir chroma_db \
+            --s3-bucket "${RAG_CHROMA_S3_BUCKET:-}" \
+            --s3-prefix "${RAG_CHROMA_S3_PREFIX:-rag/chroma}" \
+            --artifact-out /tmp/chroma-db.tgz
+
+      - name: Commit & push chroma_db (disabled; remote/manual snapshot is the source of truth)
+        if: ${{ false }}
+        run: |
+          set -euo pipefail
+
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+          git pull --ff-only origin main
+
+          git add -A chroma_db
+          if git diff --cached --quiet; then
+            echo "No changes to commit."
+            exit 0
+          fi
+
+          git commit -m "chore: update chroma_db index"
+          git push

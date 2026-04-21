@@ -1,0 +1,35 @@
+name: Unko Feed
+
+on:
+  schedule:
+    - cron: "0 11 * * *"  # JST 20:00
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Generate sentence
+        run: |
+          python scripts/generate_unko_feed.py > entry.json
+
+      - name: Write latest.json
+        run: |
+          mkdir -p frontend/public/data
+          cp entry.json frontend/public/data/latest.json
+
+      - name: Commit & Push
+        run: |
+          git config user.name "bot"
+          git config user.email "bot@example.com"
+          git add .
+          git commit -m "update unko feed" || echo "no changes"
+          git push

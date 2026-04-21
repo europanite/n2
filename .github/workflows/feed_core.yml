@@ -1,0 +1,426 @@
+name: Feed_Core
+
+on:
+  workflow_call:
+    inputs:
+      scheduled_kind:
+        description: "Entry kind to generate"
+        required: true
+        type: string
+      avatar_image:
+        description: "Avatar image path (e.g. image/avatar/night.png)"
+        required: true
+        type: string
+    outputs:
+      changed:
+        description: "1 if feed files were updated"
+        value: ${{ jobs.export.outputs.changed }}
+      sha:
+        description: "Commit SHA that contains the generated feed"
+        value: ${{ jobs.export.outputs.sha }}
+  workflow_dispatch:
+    inputs:
+      scheduled_kind:
+        description: "Entry kind to generate"
+        required: true
+        type: choice
+        options:
+          - spot
+          - garbage
+          - restaurant
+          - event
+          - activity
+      avatar_image:
+        description: "Avatar image path"
+        required: true
+        default: "image/avatar/night.png"
+        type: string
+
+permissions:
+  actions: read
+  contents: read
+  id-token: write
+
+env:
+  ASSET_MODE: local
+  ARTIFACT_PUBLIC_DIR: frontend/app/public
+  ARTIFACT_FEED_DIR: ""
+  ARTIFACT_IMAGE_DIR: ""
+  ARTIFACT_SNAPSHOT_DIR: ""
+  ARTIFACT_LATEST_PATH: frontend/app/public/latest.json
+  PUBLIC_FEED_URL: ./latest.json
+  PUBLIC_ASSET_BASE_URL: ""
+  PUBLIC_FEED_BASE_URL: ""
+  PUBLIC_IMAGE_BASE_URL: ""
+  AWS_REGION: ${{ vars.AWS_REGION }}
+  AWS_S3_BUCKET_PUBLIC: ${{ vars.AWS_S3_BUCKET_PUBLIC }}
+  AWS_S3_BUCKET_BACKUP: ${{ vars.AWS_S3_BUCKET_BACKUP }}
+  AWS_CLOUDFRONT_DISTRIBUTION_ID: ${{ vars.AWS_CLOUDFRONT_DISTRIBUTION_ID }}
+  DATA_JSON_URL: ${{ vars.DATA_JSON_URL }}
+  DATA_JSON_OUT: data/json/data.json
+  RAG_CHROMA_SOURCE: ${{ vars.RAG_CHROMA_SOURCE }}
+  RAG_CHROMA_GDRIVE_URL: ${{ vars.RAG_SNAPSHOT_URL }}
+  RAG_CHROMA_S3_BUCKET: ${{ vars.AWS_S3_BUCKET_BACKUP }}
+  RAG_CHROMA_S3_PREFIX: rag/chroma
+  RAG_CHROMA_LOCAL_DIR: chroma_db_seed
+
+jobs:
+  rag:
+    runs-on: ubuntu-latest
+    env:
+      SCHEDULED_KIND: ${{ inputs.scheduled_kind }}
+      AVATAR_IMAGE: ${{ inputs.avatar_image }}
+    outputs:
+      changed: ${{ steps.package.outputs.changed }}
+      sha: ${{ steps.package.outputs.sha }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Restore chroma_db from selected source
+        env:
+          RAG_CHROMA_SOURCE: ${{ env.RAG_CHROMA_SOURCE }}
+          RAG_CHROMA_GDRIVE_URL: ${{ env.RAG_CHROMA_GDRIVE_URL }}
+          RAG_CHROMA_S3_BUCKET: ${{ env.RAG_CHROMA_S3_BUCKET }}
+          RAG_CHROMA_S3_PREFIX: ${{ env.RAG_CHROMA_S3_PREFIX }}
+          RAG_CHROMA_LOCAL_DIR: ${{ env.RAG_CHROMA_LOCAL_DIR }}
+        run: |
+          set -euo pipefail
+          python3 scripts/chroma_switch.py restore             --source "${RAG_CHROMA_SOURCE:-gdrive}"             --out-dir chroma_db             --gdrive-url "${RAG_CHROMA_GDRIVE_URL:-}"             --s3-bucket "${RAG_CHROMA_S3_BUCKET:-}"             --s3-prefix "${RAG_CHROMA_S3_PREFIX:-rag/chroma}"             --local-dir "${RAG_CHROMA_LOCAL_DIR:-chroma_db_seed}"
+
+      - name: Verify restored chroma_db
+        run: |
+          set -euo pipefail
+          python3 scripts/chroma_switch.py verify-local             --chroma-dir chroma_db             --collection-name documents             --min-count 1
+
+      - name: Free disk space
+        run: |
+          set -eux
+          sudo rm -rf /usr/share/dotnet /opt/ghc /usr/local/lib/android
+          docker system prune -af || true
+          df -h
+
+      - name: Make pipeline scripts executable
+        run: |
+          chmod +x scripts/feed.sh scripts/fetch_data_json_from_gdrive.py scripts/fetch_public_file.py scripts/chroma_switch.py
+
+      - name: Fetch data.json from Google Drive public link
+        env:
+          DATA_JSON_URL: ${{ env.DATA_JSON_URL }}
+          DATA_JSON_OUT: ${{ env.DATA_JSON_OUT }}
+        run: |
+          set -euo pipefail
+          if [ -z "${DATA_JSON_URL}" ]; then
+            echo "ERROR: Repository variable DATA_JSON_URL is required."
+            exit 1
+          fi
+          python3 scripts/fetch_data_json_from_gdrive.py \
+            --url "${DATA_JSON_URL}" \
+            --out "${DATA_JSON_OUT}"
+
+      - name: Echo selected entry
+        run: |
+          echo "SCHEDULED_KIND=${SCHEDULED_KIND}"
+          echo "AVATAR_IMAGE=${AVATAR_IMAGE}"
+          echo "DATA_JSON_OUT=${DATA_JSON_OUT}"
+
+      - name: Run feed pipeline
+        env:
+          RAG_AUTO_INDEX: "false"
+          RAG_REBUILD_ON_START: "false"
+          RAG_REINDEX_ENABLED: "false"
+          OLLAMA_BASE_URL: "http://ollama:11434"
+          OLLAMA_TIMEOUT_S: "512"
+          EMBEDDING_MODEL: "mxbai-embed-large"
+          RAG_MODEL: "llama3.1:8b"
+          AUDIT_MODEL: "llama3.1:8b"
+          RAG_AUDIT: "1"
+          RAG_AUDIT_REWRITE: "1"
+          RAG_AUDIT_MAX_ATTEMPTS: "2"
+          LAT: "35.2810"
+          LON: "139.6722"
+          TZ_NAME: "Asia/Tokyo"
+          RAG_TOP_K: "8"
+          CURL_MAX_TIME: "512"
+          CURL_RETRIES: "1"
+          FEED_PATH: ${{ env.ARTIFACT_PUBLIC_DIR }}
+          LATEST_PATH: ${{ env.ARTIFACT_LATEST_PATH }}
+          MAX_CHARS: "220"
+          REACT_NATIVE_PACKAGER_HOSTNAME: "127.0.0.1"
+          TOPIC_VARIANT: ${{ github.run_number }}
+          RAG_VARIETY: "1.0"
+          DEBUG: "1"
+        run: |
+          bash scripts/feed.sh --ci
+
+      - name: Dump logs on failure
+        if: failure()
+        run: |
+          docker compose -f docker-compose.yml ps || true
+          docker compose -f docker-compose.yml logs --no-color --tail=400 || true
+          docker system df || true
+          df -h || true
+
+      - name: Stop stack
+        if: always()
+        run: |
+          docker compose -f docker-compose.yml down || true
+
+      - name: Package generated feed state for downstream jobs
+        id: package
+        run: |
+          set -euo pipefail
+
+          PUBLIC_DIR="${ARTIFACT_PUBLIC_DIR:-frontend/app/public}"
+          LATEST_PATH_RESOLVED="${ARTIFACT_LATEST_PATH:-$PUBLIC_DIR/latest.json}"
+          FEED_DIR_RESOLVED="${ARTIFACT_FEED_DIR:-$PUBLIC_DIR/feed}"
+          SNAPSHOT_DIR_RESOLVED="${ARTIFACT_SNAPSHOT_DIR:-$(dirname "$LATEST_PATH_RESOLVED")/snapshot}"
+
+          if [ ! -f "$LATEST_PATH_RESOLVED" ]; then
+            echo "No generated latest.json"
+            echo "changed=0" >> "$GITHUB_OUTPUT"
+            echo "sha=" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          if [ ! -d "$FEED_DIR_RESOLVED" ] || ! find "$FEED_DIR_RESOLVED" -maxdepth 1 -type f -name '*.json' | grep -q .; then
+            echo "No generated feed json"
+            echo "changed=0" >> "$GITHUB_OUTPUT"
+            echo "sha=" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          STAGE_DIR=/tmp/rag-feed-state
+          rm -rf "$STAGE_DIR"
+          mkdir -p "$STAGE_DIR/feed" "$STAGE_DIR/snapshot"
+          cp "$LATEST_PATH_RESOLVED" "$STAGE_DIR/latest.json"
+
+          if [ -d "$FEED_DIR_RESOLVED" ]; then
+            cp -a "$FEED_DIR_RESOLVED"/. "$STAGE_DIR/feed/"
+          fi
+
+          if [ -d "$SNAPSHOT_DIR_RESOLVED" ]; then
+            cp -a "$SNAPSHOT_DIR_RESOLVED"/. "$STAGE_DIR/snapshot/"
+          fi
+
+          tar -C "$STAGE_DIR" -czf /tmp/rag-feed-state.tgz .
+
+          echo "changed=1" >> "$GITHUB_OUTPUT"
+          echo "sha=${GITHUB_SHA}" >> "$GITHUB_OUTPUT"
+
+      - name: Upload generated feed state for downstream jobs
+        if: steps.package.outputs.changed == '1'
+        uses: actions/upload-artifact@v4
+        with:
+          name: rag-feed-state-${{ github.run_id }}
+          path: /tmp/rag-feed-state.tgz
+          if-no-files-found: error
+          retention-days: 1
+
+  illustrate:
+    needs: rag
+    if: needs.rag.outputs.changed == '1'
+    runs-on: ubuntu-latest
+    outputs:
+      changed: ${{ steps.publish.outputs.changed }}
+      sha: ${{ steps.publish.outputs.sha }}
+    steps:
+      - name: Checkout (main)
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: Setup Python 3.12 (snapshot)
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install deps (snapshot)
+        run: |
+          python -m pip install --upgrade pip
+          pip install requests
+
+      - name: Download generated feed state
+        uses: actions/download-artifact@v4
+        with:
+          name: rag-feed-state-${{ github.run_id }}
+          path: /tmp/rag-feed-state
+
+      - name: Restore generated feed state
+        run: |
+          set -euo pipefail
+          mkdir -p frontend/app/public
+          tar -C frontend/app/public -xzf /tmp/rag-feed-state/rag-feed-state.tgz
+
+      - name: Choose style by JST hour (day=img2img, night=text2img)
+        id: style
+        run: |
+          set -euo pipefail
+          HOUR=$(TZ=Asia/Tokyo date +%H)
+          if [ "$HOUR" -ge 4 ] && [ "$HOUR" -lt 18 ]; then
+            # Day: photo img2img (no LoRA)
+            echo "use_camera=1" >> "$GITHUB_OUTPUT"
+            echo "INPUT_IMAGE=snapshot.jpg" >> $GITHUB_ENV
+            echo "MODE=img2img" >> $GITHUB_ENV
+            echo "LORA_PATH=" >> $GITHUB_ENV
+            echo "LORA_SCALE=0" >> $GITHUB_ENV
+            echo "MIRROR_AUG=1" >> $GITHUB_ENV
+            echo "STEPS=2" >> $GITHUB_ENV
+            echo "STRENGTH=0.2" >> $GITHUB_ENV
+            echo "GUIDANCE_SCALE=0.0" >> $GITHUB_ENV
+            echo "PROMPT=" >> $GITHUB_ENV
+            echo "NEGATIVE=" >> $GITHUB_ENV
+          else
+            # Night: ukiyo-e text2img (ignore camera)
+            echo "use_camera=0" >> $GITHUB_OUTPUT
+            echo "INPUT_IMAGE=" >> $GITHUB_ENV
+            echo "MODE=text2img" >> $GITHUB_ENV
+            echo "LORA_PATH=models/loras/ukiyoe.safetensors" >> $GITHUB_ENV
+            echo "LORA_SCALE=0.8" >> $GITHUB_ENV
+            echo "STEPS=6" >> $GITHUB_ENV
+            echo "GUIDANCE_SCALE=2.0" >> $GITHUB_ENV
+            echo "PROMPT=ukiyo-e, Japanese woodblock print, Edo period, bold black outlines, flat colors, washi paper texture, woodgrain, traditional print, moonlit night with lantern light, clear visibility, scene in {place}. Inspired by: {core}" >> $GITHUB_ENV
+            echo "NEGATIVE=photorealistic, realistic, 3d, CGI, anime, text, watermark, logo, low quality, blurry, underexposed, too dark" >> $GITHUB_ENV
+          fi
+
+      - name: Capture snapshot (rag image url preferred)
+        if: steps.style.outputs.use_camera == '1'
+        env:
+          SNAP_URL: "https://coast-cam.com/images/cam1.jpg"  # yokosuka
+          LATEST_PATH: ${{ env.ARTIFACT_LATEST_PATH }}
+          REF_MAX_CANDIDATES: "8"
+        run: |
+          python scripts/retrieve_snapshot.py
+
+      - name: Free disk space
+        run: |
+          set -euo pipefail
+          df -h
+          sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc 2>/dev/null || true
+          sudo docker system prune -af --volumes 2>/dev/null || true
+          df -h
+
+      - name: Cache Hugging Face + Torch
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cache/huggingface
+            ~/.cache/torch
+          key: ${{ runner.os }}-hf-torch-sdturbo-v1
+          restore-keys: |
+            ${{ runner.os }}-hf-torch-sdturbo-
+            ${{ runner.os }}-hf-torch-
+
+      - name: Wire cache dirs into docker-compose
+        run: |
+          echo "HF_CACHE_DIR=$HOME/.cache/huggingface" >> $GITHUB_ENV
+          echo "TORCH_CACHE_DIR=$HOME/.cache/torch" >> $GITHUB_ENV
+
+      - name: Build illustrate image
+        env:
+          REACT_NATIVE_PACKAGER_HOSTNAME: "127.0.0.1"
+        run: |
+          set -euo pipefail
+          docker compose -f docker-compose.yml build illustrate
+      - name: Generate illustrated image and patch feed
+        env:
+          # arrange(img2img)
+          REACT_NATIVE_PACKAGER_HOSTNAME: "127.0.0.1"
+          PATCH_JSON: "1"
+          OUT_DIR: ${{ env.ARTIFACT_IMAGE_DIR }}
+          MIRROR_AUG: "1"
+          SEED_OFFSET: "${{ github.run_number }}"
+          SDXL_MODEL_ID: stabilityai/sdxl-turbo
+        run: |
+          set -euo pipefail
+          test -f "${ARTIFACT_LATEST_PATH:-frontend/app/public/latest.json}"
+          docker compose -f docker-compose.yml run --rm illustrate
+
+      - name: Package generated state for downstream jobs
+        id: publish
+        run: |
+          set -euo pipefail
+
+          PUBLIC_DIR="${ARTIFACT_PUBLIC_DIR:-frontend/app/public}"
+          LATEST_PATH_RESOLVED="${ARTIFACT_LATEST_PATH:-$PUBLIC_DIR/latest.json}"
+          FEED_DIR_RESOLVED="${ARTIFACT_FEED_DIR:-$PUBLIC_DIR/feed}"
+          SNAPSHOT_DIR_RESOLVED="${ARTIFACT_SNAPSHOT_DIR:-$(dirname "$LATEST_PATH_RESOLVED")/snapshot}"
+          IMAGE_DIR_RESOLVED="${ARTIFACT_IMAGE_DIR:-$PUBLIC_DIR/image}"
+
+          test -f "$LATEST_PATH_RESOLVED"
+          test -d "$FEED_DIR_RESOLVED"
+
+          STAGE_DIR=/tmp/pages-state
+          rm -rf "$STAGE_DIR"
+          mkdir -p "$STAGE_DIR/feed" "$STAGE_DIR/snapshot" "$STAGE_DIR/image"
+          cp "$LATEST_PATH_RESOLVED" "$STAGE_DIR/latest.json"
+
+          if [ -d "$FEED_DIR_RESOLVED" ]; then
+            cp -a "$FEED_DIR_RESOLVED"/. "$STAGE_DIR/feed/"
+          fi
+
+          if [ -d "$SNAPSHOT_DIR_RESOLVED" ]; then
+            cp -a "$SNAPSHOT_DIR_RESOLVED"/. "$STAGE_DIR/snapshot/"
+          fi
+
+          if [ -d "$IMAGE_DIR_RESOLVED" ]; then
+            cp -a "$IMAGE_DIR_RESOLVED"/. "$STAGE_DIR/image/"
+          fi
+
+          tar -C "$STAGE_DIR" -czf /tmp/pages-state.tgz .
+
+          echo "changed=1" >> "$GITHUB_OUTPUT"
+          echo "sha=${GITHUB_SHA}" >> "$GITHUB_OUTPUT"
+
+      - name: Upload generated state for downstream jobs
+        if: steps.publish.outputs.changed == '1'
+        uses: actions/upload-artifact@v4
+        with:
+          name: pages-state-${{ github.run_id }}
+          path: /tmp/pages-state.tgz
+          if-no-files-found: error
+          retention-days: 1
+
+      - name: Upload latest.json
+        if: steps.publish.outputs.changed == '1'
+        uses: actions/upload-artifact@v4
+        with:
+          name: latest-json-${{ github.run_id }}
+          path: ${{ env.ARTIFACT_LATEST_PATH }}
+          if-no-files-found: error
+          retention-days: 1
+  pages:
+    needs: [rag, illustrate]
+    if: needs.illustrate.outputs.changed == '1'
+    uses: ./.github/workflows/pages.yml
+    secrets: inherit
+    with:
+      ref: main
+      state_artifact_name: pages-state-${{ github.run_id }}
+      artifact_run_id: ${{ github.run_id }}
+    permissions:
+      actions: read
+      contents: read
+      id-token: write
+
+  export:
+    needs: [rag, illustrate, pages]
+    if: always()
+    runs-on: ubuntu-latest
+    outputs:
+      changed: ${{ steps.out.outputs.changed }}
+      sha: ${{ steps.out.outputs.sha }}
+    steps:
+      - name: Export outputs
+        id: out
+        run: |
+          echo "changed=${{ needs.illustrate.outputs.changed || needs.rag.outputs.changed }}" >> "$GITHUB_OUTPUT"
+          echo "sha=${{ needs.illustrate.outputs.sha || needs.rag.outputs.sha }}" >> "$GITHUB_OUTPUT"

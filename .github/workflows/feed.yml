@@ -1,0 +1,172 @@
+name: Feed
+
+on:
+  schedule:
+    - cron: '0 * * * *'
+  workflow_call:
+    inputs:
+      slot:
+        description: "Which slot to run (auto = decide by schedule gate)"
+        required: false
+        type: string
+        default: "auto"
+  workflow_dispatch:
+    inputs:
+      slot:
+        description: "Which slot to run (auto = decide by schedule gate)"
+        required: false
+        default: "auto"
+        type: choice
+        options:
+          - auto
+          - spot
+          - cheatsheet
+          - restaurant
+          - event
+          - spot_intro
+          - activity
+
+permissions:
+  actions: read
+  contents: write
+  pages: write
+  id-token: write
+
+jobs:
+  select:
+    runs-on: ubuntu-latest
+    outputs:
+      slot: ${{ steps.sel.outputs.slot }}
+      should_run: ${{ steps.sel.outputs.should_run }}
+      window_id: ${{ steps.sel.outputs.window_id }}
+      reason: ${{ steps.sel.outputs.reason }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 1
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Select slot (schedule gate)
+        id: sel
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          REQUESTED_SLOT: ${{ github.event.inputs.slot || '' }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_API_URL: ${{ github.api_url }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+          GITHUB_RUN_ID: ${{ github.run_id }}
+        run: |
+          set -euo pipefail
+          set +e
+          python scripts/feed_schedule_gate.py \
+            --config .github/feed_schedule.json \
+            --event-name "${EVENT_NAME}" \
+            --requested-slot "${REQUESTED_SLOT:-}" \
+            --repo "${GITHUB_REPOSITORY}" \
+            --workflow-file "feed.yml" \
+            --github-api-url "${GITHUB_API_URL}" \
+            --github-token "${GITHUB_TOKEN}" \
+            --current-run-id "${GITHUB_RUN_ID}" \
+            --github-output "${GITHUB_OUTPUT}"
+          gate_rc=$?
+          set -e
+
+          if [ "$gate_rc" -ne 0 ]; then
+            echo "feed_schedule_gate.py failed with exit=${gate_rc}" >&2
+            {
+              echo "should_run=false"
+              echo "slot="
+              echo "window_id="
+              echo "reason=gate_failed_exit_${gate_rc}"
+            } >> "${GITHUB_OUTPUT}"
+          fi
+
+      - name: Log selection
+        run: |
+          echo "should_run=${{ steps.sel.outputs.should_run }}"
+          echo "slot=${{ steps.sel.outputs.slot }}"
+          echo "window_id=${{ steps.sel.outputs.window_id }}"
+          echo "reason=${{ steps.sel.outputs.reason }}"
+
+  sspot:
+    needs: select
+    if: needs.select.outputs.should_run == 'true' && needs.select.outputs.slot == 'spot'
+    uses: ./.github/workflows/feed_slot_spot.yml
+    permissions:
+      actions: read
+      contents: write
+      pages: write
+      id-token: write
+    secrets: inherit
+
+  sgarbage:
+    needs: select
+    if: false
+    uses: ./.github/workflows/feed_slot_garbage.yml
+    permissions:
+      actions: read
+      contents: write
+      pages: write
+      id-token: write
+    secrets: inherit
+
+  scheatsheet:
+    needs: select
+    if: needs.select.outputs.should_run == 'true' && needs.select.outputs.slot == 'cheatsheet'
+    uses: ./.github/workflows/cheatsheet.yml
+    permissions:
+      actions: read
+      contents: write
+      pages: write
+      id-token: write
+    secrets: inherit
+
+  srestaurant:
+    needs: select
+    if: needs.select.outputs.should_run == 'true' && needs.select.outputs.slot == 'restaurant'
+    uses: ./.github/workflows/feed_slot_restaurant.yml
+    permissions:
+      actions: read
+      contents: write
+      pages: write
+      id-token: write
+    secrets: inherit
+
+  sevent:
+    needs: select
+    if: needs.select.outputs.should_run == 'true' && needs.select.outputs.slot == 'event'
+    uses: ./.github/workflows/feed_slot_event.yml
+    permissions:
+      actions: read
+      contents: write
+      pages: write
+      id-token: write
+    secrets: inherit
+
+  sspot_intro:
+    needs: select
+    if: needs.select.outputs.should_run == 'true' && needs.select.outputs.slot == 'spot_intro'
+    uses: ./.github/workflows/feed_slot_spot_intro.yml
+    permissions:
+      actions: read
+      contents: write
+      pages: write
+      id-token: write
+    secrets: inherit
+
+  sactivity:
+    needs: select
+    if: needs.select.outputs.should_run == 'true' && needs.select.outputs.slot == 'activity'
+    uses: ./.github/workflows/feed_slot_activity.yml
+    permissions:
+      actions: read
+      contents: write
+      pages: write
+      id-token: write
+    secrets: inherit
