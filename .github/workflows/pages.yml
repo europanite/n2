@@ -1,7 +1,6 @@
 name: Pages
 
 on:
-  workflow_dispatch:
   workflow_call:
     inputs:
       ref:
@@ -10,25 +9,26 @@ on:
         type: string
         default: "main"
       state_artifact_name:
-        description: "Optional upstream state artifact name"
+        description: "Optional artifact created by upstream jobs"
         required: false
         type: string
         default: ""
       artifact_run_id:
-        description: "Optional run id that owns the upstream artifact"
+        description: "Run id for the optional upstream artifact"
         required: false
         type: string
         default: ""
+  workflow_dispatch:
 
 permissions:
+  actions: read
   contents: read
   pages: write
   id-token: write
-  actions: read
 
 concurrency:
   group: pages
-  cancel-in-progress: false
+  cancel-in-progress: true
 
 jobs:
   build:
@@ -38,28 +38,27 @@ jobs:
         uses: actions/checkout@v4
         with:
           ref: ${{ inputs.ref || 'main' }}
-          fetch-depth: 1
 
-      - name: Setup Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.12"
-
-      - name: Restore upstream pages state
+      - name: Restore upstream public state
         if: ${{ inputs.state_artifact_name != '' }}
         uses: actions/download-artifact@v4
         with:
           name: ${{ inputs.state_artifact_name }}
-          path: /tmp/pages-state
           run-id: ${{ inputs.artifact_run_id != '' && inputs.artifact_run_id || github.run_id }}
-          github-token: ${{ github.token }}
+          path: /tmp/pages-state
+          github-token: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Expand upstream pages state
+      - name: Unpack upstream public state
         if: ${{ inputs.state_artifact_name != '' }}
         run: |
           set -euo pipefail
           mkdir -p frontend/app/public
           tar -C frontend/app/public -xzf /tmp/pages-state/pages-state.tgz
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
 
       - name: Generate latest.json
         run: |
@@ -72,14 +71,14 @@ jobs:
           echo "===== frontend/app/public/latest.json ====="
           cat frontend/app/public/latest.json
 
-      - name: Setup Node
+      - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: "20"
           cache: "npm"
           cache-dependency-path: frontend/app/package-lock.json
 
-      - name: Install frontend deps
+      - name: Install frontend dependencies
         working-directory: frontend/app
         run: |
           set -euo pipefail
@@ -89,14 +88,20 @@ jobs:
         working-directory: frontend/app
         env:
           CI: "1"
+          EXPO_NO_TELEMETRY: "1"
         run: |
           set -euo pipefail
           npx expo export --platform web --output-dir web-build
 
-      - name: Copy public resources into web-build
+      - name: Merge public resources into web build
         run: |
           set -euo pipefail
+          mkdir -p frontend/app/web-build
           cp -a frontend/app/public/. frontend/app/web-build/
+          touch frontend/app/web-build/.nojekyll
+
+      - name: Configure Pages
+        uses: actions/configure-pages@v5
 
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v3
@@ -111,3 +116,5 @@ jobs:
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
