@@ -5,6 +5,16 @@ from pathlib import Path
 
 PUBLIC_DIR = Path("frontend/app/public")
 LATEST_PATH = PUBLIC_DIR / "latest.json"
+FEED_DIR = PUBLIC_DIR / "feed"
+SNAPSHOT_DIR = PUBLIC_DIR / "snapshot"
+
+
+def utc_now_iso_z() -> str:
+    return datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
+
+
+def local_stamp() -> str:
+    return datetime.now().strftime("%Y%m%d_%H%M%S")
 
 
 def generate_sentence() -> str:
@@ -21,32 +31,59 @@ def generate_sentence() -> str:
             return text
     except Exception:
         pass
-
     return "今日はとても立派なうんこを生成した。"
 
 
-def main() -> int:
-    sentence = generate_sentence()
-    now = datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
-
-    payload = {
+def build_entry(sentence: str) -> dict:
+    now = utc_now_iso_z()
+    return {
         "kind": "unko",
         "text": sentence,
         "tweet": sentence,
+        "place": "N2",
+        "published_at": now,
         "created_at": now,
         "updated_at": now,
         "avatar_image": "image/avatar/normal.png",
         "image": "image/avatar/normal.png",
+        "fixed_image": "",
         "links": [],
+        "weather": None,
     }
 
+
+def main() -> int:
+    sentence = generate_sentence()
+    entry = build_entry(sentence)
+
     PUBLIC_DIR.mkdir(parents=True, exist_ok=True)
+    FEED_DIR.mkdir(parents=True, exist_ok=True)
+    SNAPSHOT_DIR.mkdir(parents=True, exist_ok=True)
+
     LATEST_PATH.write_text(
-        json.dumps(payload, ensure_ascii=False, indent=2),
+        json.dumps(entry, ensure_ascii=False, indent=2),
         encoding="utf-8",
     )
 
-    print(json.dumps(payload, ensure_ascii=False))
+    (FEED_DIR / f"feed_{local_stamp()}.json").write_text(
+        json.dumps([entry], ensure_ascii=False, indent=2),
+        encoding="utf-8",
+    )
+
+    (SNAPSHOT_DIR / "latest_weather.json").write_text(
+        json.dumps(
+            {
+                "ok": True,
+                "source": "generate_feed.py",
+                "generated_at": utc_now_iso_z(),
+            },
+            ensure_ascii=False,
+            indent=2,
+        ),
+        encoding="utf-8",
+    )
+
+    print(json.dumps(entry, ensure_ascii=False))
     return 0
 
 
