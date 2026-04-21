@@ -3,7 +3,6 @@ import subprocess
 from datetime import datetime, timezone
 from pathlib import Path
 
-
 PUBLIC_DIR = Path("frontend/app/public")
 LATEST_PATH = PUBLIC_DIR / "latest.json"
 
@@ -28,13 +27,14 @@ def generate_sentence() -> str:
 
 def main() -> int:
     sentence = generate_sentence()
+    now = datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
 
     payload = {
         "kind": "unko",
         "text": sentence,
         "tweet": sentence,
-        "created_at": datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
-        "updated_at": datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
+        "created_at": now,
+        "updated_at": now,
         "avatar_image": "image/avatar/normal.png",
         "image": "image/avatar/normal.png",
         "links": [],
