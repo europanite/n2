@@ -1,4 +1,4 @@
-name: Unko Feed
+name: Feed Contents
 
 on:
   schedule:
@@ -31,5 +31,5 @@ jobs:
           git config user.name "bot"
           git config user.email "bot@example.com"
           git add .
-          git commit -m "update unko feed" || echo "no changes"
+          git commit -m "update Feed Contents" || echo "no changes"
           git push

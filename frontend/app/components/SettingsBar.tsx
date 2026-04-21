@@ -51,7 +51,7 @@ async function openUrl(url: string) {
 
 type Props = { title?: string };
 
-export default function SettingsBar({ title = "GOODDAY YOKOSUKA" }: Props) {
+export default function SettingsBar({ title = "N2" }: Props) {
   const { width } = useWindowDimensions();
   const isNarrow = width < 520;
 
