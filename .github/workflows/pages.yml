@@ -1,257 +1,48 @@
-name: Pages
+name: Unko Pages Standalone
 
 on:
-  workflow_call:
-    inputs:
-      ref:
-        description: "Branch/ref to build & deploy"
-        required: false
-        type: string
-        default: "main"
-      state_artifact_name:
-        description: "Optional artifact name containing latest/feed/image/snapshot to overlay before export"
-        required: false
-        type: string
-        default: ""
-      artifact_run_id:
-        description: "Workflow run ID that owns state_artifact_name"
-        required: false
-        type: string
-        default: ""
+  schedule:
+    - cron: '0 11 * * *'
   workflow_dispatch:
-    inputs:
-      ref:
-        description: "Branch/ref to build & deploy"
-        required: false
-        default: "main"
-      state_artifact_name:
-        description: "Optional artifact name containing latest/feed/image/snapshot to overlay before export"
-        required: false
-        default: ""
-      artifact_run_id:
-        description: "Workflow run ID that owns state_artifact_name"
-        required: false
-        default: ""
 
 permissions:
-  actions: read
   contents: read
+  pages: write
   id-token: write
 
-env:
-  ASSET_MODE: local
-  ARTIFACT_PUBLIC_DIR: frontend/app/public
-  ARTIFACT_FEED_DIR: ""
-  ARTIFACT_IMAGE_DIR: ""
-  ARTIFACT_SNAPSHOT_DIR: ""
-  ARTIFACT_LATEST_PATH: frontend/app/public/latest.json
-  PUBLIC_FEED_URL: ./latest.json
-  PUBLIC_ASSET_BASE_URL: ""
-  PUBLIC_FEED_BASE_URL: ""
-  PUBLIC_IMAGE_BASE_URL: ""
-  AWS_REGION: ${{ vars.AWS_REGION }}
-  AWS_S3_BUCKET_PUBLIC: ${{ vars.AWS_S3_BUCKET_PUBLIC }}
-  AWS_CLOUDFRONT_DISTRIBUTION_ID: ${{ vars.AWS_CLOUDFRONT_DISTRIBUTION_ID }}
-
 concurrency:
-  group: "pages"
-  cancel-in-progress: true
+  group: unko-pages
+  cancel-in-progress: false
 
 jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout (ref)
+      - name: Checkout
         uses: actions/checkout@v4
-        with:
-          ref: ${{ inputs.ref }}
-          fetch-depth: 0
 
-      - name: Ensure latest remote ref (branch only)
-        run: |
-          set -euo pipefail
-          REF="${{ inputs.ref }}"
-
-          # If it's a commit SHA, checkout is already pinned to it.
-          if [[ "$REF" =~ ^[0-9a-f]{7,40}$ ]]; then
-            echo "inputs.ref looks like a commit SHA ($REF); skipping remote reset."
-            exit 0
-          fi
-
-          git fetch origin "$REF" --prune
-          if git show-ref --verify --quiet "refs/remotes/origin/$REF"; then
-            git reset --hard "origin/$REF"
-          fi
-
-      - name: Use Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: 25.8.1
-          cache: npm
-          cache-dependency-path: |
-            frontend/app/package-lock.json
-
-      - name: Install deps
-        working-directory: frontend/app
-        run: npm ci
-
-      - name: Use Python 3.12
+      - name: Setup Python
         uses: actions/setup-python@v5
         with:
-          python-version: "3.12"
+          python-version: '3.11'
 
-      - name: Debug AWS inputs
-        shell: bash
-        env:
-          AWS_ROLE_ARN_SECRET: ${{ secrets.AWS_ROLE_ARN }}
+      - name: Generate static site
         run: |
           set -euo pipefail
-          echo "event=${GITHUB_EVENT_NAME}"
-          echo "actor=${GITHUB_ACTOR}"
-          echo "ref=${GITHUB_REF}"
-          [ -n "${AWS_REGION:-}" ] && echo "AWS_REGION=set" || echo "AWS_REGION=empty"
-          [ -n "${AWS_S3_BUCKET_PUBLIC:-}" ] && echo "AWS_S3_BUCKET_PUBLIC=set" || echo "AWS_S3_BUCKET_PUBLIC=empty"
-          [ -n "${AWS_ROLE_ARN_SECRET:-}" ] && echo "AWS_ROLE_ARN=set" || echo "AWS_ROLE_ARN=empty"
+          python scripts/generate_pages.py
 
-      - name: Configure AWS credentials via OIDC
-        if: env.AWS_S3_BUCKET_PUBLIC != ''
-        uses: aws-actions/configure-aws-credentials@v4
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
         with:
-          aws-region: ${{ env.AWS_REGION }}
-          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          path: frontend/app/public
 
-      - name: Show caller identity
-        if: env.AWS_S3_BUCKET_PUBLIC != ''
-        run: aws sts get-caller-identity
-
-      - name: Hydrate currently published generated state from S3 (best effort)
-        if: env.AWS_S3_BUCKET_PUBLIC != ''
-        run: |
-          set -euo pipefail
-          PUBLIC_DIR="frontend/app/public"
-          BUCKET="s3://${AWS_S3_BUCKET_PUBLIC}"
-
-          mkdir -p "$PUBLIC_DIR/feed" "$PUBLIC_DIR/image" "$PUBLIC_DIR/snapshot" "$PUBLIC_DIR/articles"
-
-          aws s3 cp "$BUCKET/latest.json" "$PUBLIC_DIR/latest.json" 2>/dev/null || true
-          aws s3 sync "$BUCKET/feed/" "$PUBLIC_DIR/feed/" --exclude ".gitkeep" --exclude ".nojekyll" 2>/dev/null || true
-          aws s3 sync "$BUCKET/snapshot/" "$PUBLIC_DIR/snapshot/" --exclude ".gitkeep" 2>/dev/null || true
-          aws s3 sync "$BUCKET/image/" "$PUBLIC_DIR/image/" --exclude ".gitkeep" 2>/dev/null || true
-          aws s3 sync "$BUCKET/articles/" "$PUBLIC_DIR/articles/" --exclude ".gitkeep" 2>/dev/null || true
-
-      - name: Download generated state artifact (optional)
-        if: inputs.state_artifact_name != ''
-        uses: actions/download-artifact@v4
-        with:
-          name: ${{ inputs.state_artifact_name }}
-          github-token: ${{ github.token }}
-          run-id: ${{ inputs.artifact_run_id }}
-          path: /tmp/pages-state
-
-      - name: Restore generated state artifact into public dir (optional)
-        if: inputs.state_artifact_name != ''
-        run: |
-          set -euo pipefail
-          mkdir -p frontend/app/public
-          tar -C frontend/app/public -xzf /tmp/pages-state/pages-state.tgz
-
-      - name: Build paged feed
-        env:
-          FEED_PATH: ${{ env.ARTIFACT_PUBLIC_DIR }}
-          LATEST_PATH: ${{ env.ARTIFACT_LATEST_PATH }}
-          FEED_PAGE_SIZE: "20"
-        run: |
-          python scripts/build_feed_pages.py
-
-      - name: Build
-        working-directory: frontend/app
-        env:
-          # GitHub Pages should read the co-located JSON/image assets that are
-          # restored into frontend/app/public and copied into web-build below.
-          # Do not bake CloudFront URLs into the Pages bundle; that creates a
-          # cross-origin runtime dependency and breaks the site when the browser
-          # cannot fetch CloudFront JSON directly.
-          EXPO_PUBLIC_FEED_URL: ""
-          EXPO_PUBLIC_ASSET_BASE_URL: ""
-          EXPO_PUBLIC_FEED_BASE_URL: ""
-          EXPO_PUBLIC_IMAGE_BASE_URL: ""
-          EXPO_PUBLIC_FEEDBACK_FORM_URL: ${{ vars.EXPO_PUBLIC_FEEDBACK_FORM_URL }}
-          EXPO_PUBLIC_GA_MEASUREMENT_ID: ${{ vars.EXPO_PUBLIC_GA_MEASUREMENT_ID }}
-          EXPO_PUBLIC_ADS_FORM_URL: ${{ vars.EXPO_PUBLIC_ADS_FORM_URL }}
-          EXPO_PUBLIC_USE_SLOT: 1
-          EXPO_PUBLIC_SLOT_ROTATE_MS: 6500
-          EXPO_PUBLIC_SLOT_FADE_MS: 800
-        run: |
-          npx expo export --platform web --output-dir web-build
-
-      - name: Copy local public assets into exported site
-        working-directory: frontend/app
-        run: |
-          set -euo pipefail
-          cp -av public/. web-build/
-
-      - name: Build social share pages (OG tags)
-        env:
-          PUBLIC_DIR: frontend/app/web-build
-          CUSTOM_DOMAIN: ${{ vars.CUSTOM_DOMAIN }}
-          EXPO_PUBLIC_GA_MEASUREMENT_ID: ${{ vars.EXPO_PUBLIC_GA_MEASUREMENT_ID }}
-        run: |
-          set -euo pipefail
-          if [ -n "${CUSTOM_DOMAIN:-}" ]; then
-            export SITE_URL="https://${CUSTOM_DOMAIN}"
-          fi
-          python scripts/build_social_pages.py
-      - name: Deploy frontend shell to S3 (preserve generated feed/image history)
-        env:
-          STATE_ARTIFACT_NAME: ${{ inputs.state_artifact_name }}
-        run: |
-          set -euo pipefail
-
-          BUCKET="s3://${AWS_S3_BUCKET_PUBLIC}"
-          PUBLIC_DIR="frontend/app/public"
-          WEB_BUILD_DIR="frontend/app/web-build"
-
-          aws s3 sync "$WEB_BUILD_DIR" "$BUCKET/"             --delete             --exclude "latest.json"             --exclude "feed/*"             --exclude "snapshot/*"             --exclude "image/*"
-
-          if [ -d "$WEB_BUILD_DIR/image/fixed" ]; then
-            aws s3 sync "$WEB_BUILD_DIR/image/fixed" "$BUCKET/image/fixed/"
-          fi
-
-          if [ -d "$WEB_BUILD_DIR/image/avatar" ]; then
-            aws s3 sync "$WEB_BUILD_DIR/image/avatar" "$BUCKET/image/avatar/"
-          fi
-
-          if [ -d "$WEB_BUILD_DIR/image/articles" ]; then
-            aws s3 sync "$WEB_BUILD_DIR/image/articles" "$BUCKET/image/articles/"
-          fi
-
-          if [ -n "${STATE_ARTIFACT_NAME}" ]; then
-            echo "Syncing generated latest/feed/snapshot/image/articles state without deleting remote history"
-
-            if [ -f "$PUBLIC_DIR/latest.json" ]; then
-              aws s3 cp "$PUBLIC_DIR/latest.json" "$BUCKET/latest.json"
-            fi
-
-            if [ -d "$PUBLIC_DIR/feed" ]; then
-              aws s3 sync "$PUBLIC_DIR/feed" "$BUCKET/feed/"                 --exclude ".gitkeep"                 --exclude ".nojekyll"
-            fi
-
-            if [ -d "$PUBLIC_DIR/snapshot" ]; then
-              aws s3 sync "$PUBLIC_DIR/snapshot" "$BUCKET/snapshot/"                 --exclude ".gitkeep"
-            fi
-
-            if [ -d "$PUBLIC_DIR/image" ]; then
-              aws s3 sync "$PUBLIC_DIR/image" "$BUCKET/image/"                 --exclude ".gitkeep"
-            fi
-
-            if [ -d "$PUBLIC_DIR/articles" ]; then
-              aws s3 sync "$PUBLIC_DIR/articles" "$BUCKET/articles/"                 --exclude ".gitkeep"
-            fi
-          else
-            echo "No state artifact provided; skipped generated state sync"
-          fi
-
-      - name: Invalidate CloudFront cache
-        run: |
-          set -euo pipefail
-          aws cloudfront create-invalidation             --distribution-id "$AWS_CLOUDFRONT_DISTRIBUTION_ID"             --paths '/*'
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
