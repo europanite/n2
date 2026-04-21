@@ -1,24 +1,12 @@
 #!/usr/bin/env python3
-
-"""
-Compatibility wrapper for legacy workflow.
-
-Old workflow expects:
-    python scripts/generate_pages.py
-
-Current implementation uses:
-    scripts/generate_feed.py
-
-So we just delegate.
-"""
+"""Compatibility wrapper for legacy workflow entrypoint."""
 
 import subprocess
 import sys
 
 
-def main():
-    cmd = [sys.executable, "scripts/generate_feed.py"]
-    result = subprocess.run(cmd)
+def main() -> int:
+    result = subprocess.run([sys.executable, "scripts/generate_feed.py"], check=False)
     return result.returncode
 
 
