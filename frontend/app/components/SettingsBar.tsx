@@ -1,12 +1,27 @@
 import React from "react";
-import { Alert, Linking, Platform, Text, TouchableOpacity, useWindowDimensions, View } from "react-native";
+import { View, Text, TouchableOpacity, useWindowDimensions, Linking, Alert, Platform } from "react-native";
 
-const REPO_URL = "https://github.com/europanite/n2";
+const REPO_URL = "https://github.com/europanite/rag_chat_bot";
 const RAW_CONTACT_URL = (process.env.EXPO_PUBLIC_FEEDBACK_FORM_URL ?? "").trim();
+const RAW_GUIDES_URL = (process.env.EXPO_PUBLIC_LONGFORM_GUIDES_URL ?? "").trim();
 const CONTACT_URL =
   RAW_CONTACT_URL.startsWith("http://") || RAW_CONTACT_URL.startsWith("https://")
     ? RAW_CONTACT_URL
     : `${REPO_URL}/issues/new`;
+const GUIDES_URL = RAW_GUIDES_URL || "./articles/index.html";
+
+function Btn({ title, onPress }: { title: string; onPress: () => void }) {
+  return (
+    <TouchableOpacity
+      onPress={onPress}
+      style={{ paddingVertical: 6, paddingHorizontal: 10, borderWidth: 1, borderRadius: 8, backgroundColor: "#fff" }}
+      accessibilityRole="button"
+      accessibilityLabel={title}
+    >
+      <Text style={{ fontWeight: "600" }}>{title}</Text>
+    </TouchableOpacity>
+  );
+}
 
 function resolveUrl(url: string): string {
   const s = String(url ?? "").trim();
@@ -23,7 +38,7 @@ async function openUrl(url: string) {
   if (!target) return;
   try {
     if (Platform.OS === "web" && typeof window !== "undefined") {
-      window.open(target, "_blank", "noopener,noreferrer");
+      window.location.assign(target);
       return;
     }
     const ok = await Linking.canOpenURL(target);
@@ -34,43 +49,82 @@ async function openUrl(url: string) {
   }
 }
 
-function Btn({ title, onPress }: { title: string; onPress: () => void }) {
-  return (
-    <TouchableOpacity
-      onPress={onPress}
-      style={{ paddingVertical: 7, paddingHorizontal: 11, borderWidth: 1, borderRadius: 10, backgroundColor: "#fff" }}
-      accessibilityRole="button"
-      accessibilityLabel={title}
-    >
-      <Text style={{ fontWeight: "700", color: "#243a73" }}>{title}</Text>
-    </TouchableOpacity>
-  );
-}
-
 type Props = { title?: string };
 
-export default function SettingsBar({ title = "UNKO N2" }: Props) {
+export default function SettingsBar({ title = "GOODDAY YOKOSUKA" }: Props) {
   const { width } = useWindowDimensions();
-  const isNarrow = width < 600;
+  const isNarrow = width < 520;
 
   return (
-    <View style={{ padding: 12, borderBottomWidth: 1, backgroundColor: "#243a73", borderColor: "#1d2f5d" }}>
+    <View
+      style={{
+        padding: 12,
+        borderBottomWidth: 1,
+        backgroundColor: "#333366",
+      }}
+    >
       {isNarrow ? (
-        <View style={{ gap: 8, padding: 6, alignItems: "center" }}>
-          <Text style={{ fontSize: 30, fontWeight: "700", color: "#fff" }}>{title}</Text>
-          <Text style={{ color: "#dbe6ff" }}>Daily poop sentence feed for N2 learners.</Text>
-          <View style={{ flexDirection: "row", gap: 8, flexWrap: "wrap", justifyContent: "center" }}>
+        // NARROW: stack (avoid overlap)
+        <View style={{ 
+          gap: 8, 
+          padding: 6,
+          alignItems: "center"
+        }}>
+          <Text style={{ 
+            fontSize: 32, 
+            fontWeight: "512", 
+            color: "#fff"
+            }}>
+              {title}
+          </Text>
+          <Text style={{ 
+            fontWeight: "12",
+            color: "#fff"
+            }}
+          >
+            provides news for local and visitors.
+          </Text>
+
+          <View
+            style={{
+              flexDirection: "row",
+              gap: 8,
+              flexWrap: "wrap",
+              justifyContent: "center",
+            }}
+          >
             <Btn title="Contact" onPress={() => openUrl(CONTACT_URL)} />
           </View>
+
+          {/* Powered by: small + low emphasis */}
+          <TouchableOpacity
+            onPress={() => openUrl(REPO_URL)}
+            accessibilityRole="link"
+            style={{ opacity: 0.6 }}
+          >
+            <Text style={{ fontSize: 9, color: "#fff" }}>
+              Powered by <Text style={{ fontWeight: "600" }}>RAG Chat Bot</Text>
+            </Text>
+          </TouchableOpacity>
         </View>
       ) : (
-        <View style={{ position: "relative", justifyContent: "center", padding: 6, minHeight: 52 }}>
-          <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "flex-end" }}>
+        // WIDE: title pinned to center (independent of button width)
+        <View style={{ 
+          position: "relative", 
+          justifyContent: "center", 
+          padding: 6,
+          minHeight: 28 }}>
+          {/* Row content (left small label + right buttons) */}
+          <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
+
+            {/* Buttons (right) */}
             <View style={{ flexDirection: "row", gap: 8, flexWrap: "wrap", justifyContent: "flex-end" }}>
+              <Btn title="Guides" onPress={() => openUrl(GUIDES_URL)} />
               <Btn title="Contact" onPress={() => openUrl(CONTACT_URL)} />
             </View>
           </View>
 
+          {/* Center title (overlay) */}
           <View
             pointerEvents="none"
             style={{
@@ -83,8 +137,19 @@ export default function SettingsBar({ title = "UNKO N2" }: Props) {
               justifyContent: "center",
             }}
           >
-            <Text style={{ fontSize: 32, fontWeight: "700", color: "#fff" }}>{title}</Text>
-            <Text style={{ color: "#dbe6ff" }}>Daily poop sentence feed for N2 learners.</Text>
+            <Text style={{ 
+              fontSize: 32, 
+              fontWeight: "512", 
+              color: 
+              "#fff" 
+            }}>{title}</Text>
+            <Text style={{ 
+              fontWeight: "12",
+              color: "#fff"
+              }}
+            >
+              provides news for local and visitors.
+            </Text>
           </View>
         </View>
       )}

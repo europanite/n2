@@ -9,7 +9,7 @@ import { AuthProvider } from "./context/Auth";
 import SettingsBar from "./components/SettingsBar";
 import HomeScreen from "./screens/HomeScreen";
 
-const APP_TITLE = "UNKO N2";
+const APP_TITLE = "GOODDAY YOKOSUKA";
 const GA_MEASUREMENT_ID = (process.env.EXPO_PUBLIC_GA_MEASUREMENT_ID ?? "").trim();
 
 function installGoogleAnalytics() {
@@ -58,7 +58,7 @@ export default function App() {
       <StatusBar style="dark" />
       <AuthProvider>
         <NavigationContainer>
-          <SettingsBar title={APP_TITLE} />
+          <SettingsBar title={APP_TITLE}/>
           <View style={{ flex: 1 }}>
             <Stack.Navigator screenOptions={{ headerShown: false }}>
               <Stack.Screen name={APP_TITLE} component={HomeScreen} />
