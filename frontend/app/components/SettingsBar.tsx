@@ -1,7 +1,7 @@
 import React from "react";
 import { View, Text, TouchableOpacity, useWindowDimensions, Linking, Alert, Platform } from "react-native";
 
-const REPO_URL = "https://github.com/europanite/rag_chat_bot";
+const REPO_URL = "https://github.com/europanite/n2";
 const RAW_CONTACT_URL = (process.env.EXPO_PUBLIC_FEEDBACK_FORM_URL ?? "").trim();
 const RAW_GUIDES_URL = (process.env.EXPO_PUBLIC_LONGFORM_GUIDES_URL ?? "").trim();
 const CONTACT_URL =
