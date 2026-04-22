@@ -132,25 +132,25 @@ jobs:
 
           python scripts/generate_sentence.py | tee /tmp/event_sentence_raw.txt
 
-          if [ -z "${sentence}" ]; then
-            echo "Generated sentence is empty" >&2
-            echo "changed=0" >> "$GITHUB_OUTPUT"
-            exit 0
-          fi
-
           python - <<'PY'
-          import os
           import json
           from pathlib import Path
 
-          raw = Path("/tmp/event_sentence_raw.txt").read_text(encoding="utf-8")
+          raw = Path("/tmp/event_sentence_raw.txt").read_text(encoding="utf-8").strip()
+          if not raw:
+              raise SystemExit("Generated JSON is empty")
+
           data = json.loads(raw)
+
+          text = str(data.get("text", "")).strip()
+          if not text:
+              raise SystemExit("Generated text is empty")
 
           payload = {
               "kind": "event",
-              "text": data["text"],
-              "study_point": data.get("study_point", ""),
-              "translation_en": data.get("translation_en", ""),
+              "text": text,
+              "study_point": str(data.get("study_point", "")).strip(),
+              "translation_en": str(data.get("translation_en", "")).strip(),
           }
 
           Path("/tmp/event_entry.json").write_text(
