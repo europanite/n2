@@ -22,25 +22,6 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Optional
 
-try:
-    from artifact_paths import (
-        artifact_feed_dir,
-        artifact_image_dir,
-        artifact_latest_path,
-        artifact_public_dir,
-        resolve_public_avatar_url,
-        resolve_public_image_url,
-    )
-except ImportError:
-    from scripts.artifact_paths import (
-        artifact_feed_dir,
-        artifact_image_dir,
-        artifact_latest_path,
-        artifact_public_dir,
-        resolve_public_avatar_url,
-        resolve_public_image_url,
-    )
-
 import torch
 from diffusers import AutoPipelineForText2Image
 
@@ -55,6 +36,40 @@ GUIDANCE_SCALE = float(os.environ.get("GUIDANCE_SCALE", "2.0"))
 SEED_OVERRIDE = (os.environ.get("SEED") or "").strip()
 SEED_OFFSET = int(os.environ.get("SEED_OFFSET", "0"))
 DEVICE = "cpu"  # GitHub Actions runner is typically CPU for this job
+
+
+
+def artifact_public_dir(*, latest_path: Path | None = None) -> Path:
+    lp = Path(latest_path) if latest_path is not None else Path(
+        os.environ.get("LATEST_PATH", "frontend/app/public/latest.json")
+    )
+    return lp.parent
+
+
+def artifact_latest_path() -> Path:
+    return Path(os.environ.get("LATEST_PATH", "frontend/app/public/latest.json"))
+
+
+def artifact_feed_dir(*, latest_path: Path | None = None) -> Path:
+    return artifact_public_dir(latest_path=latest_path) / "feed"
+
+
+def artifact_image_dir(*, latest_path: Path | None = None) -> Path:
+    override = (os.environ.get("OUT_DIR") or "").strip()
+    if override:
+        return Path(override)
+    return artifact_public_dir(latest_path=latest_path) / "image"
+
+def resolve_public_image_url(path: Path, *, latest_path: Path | None = None) -> str:
+    public_dir = artifact_public_dir(latest_path=latest_path)
+    try:
+        return path.relative_to(public_dir).as_posix()
+    except ValueError:
+        return path.as_posix()
+
+
+def resolve_public_avatar_url(value: str, *, latest_path: Path | None = None) -> str:
+    return (value or "").strip()
 
 def load_json(p: Path) -> Any:
     return json.loads(p.read_text(encoding="utf-8"))
