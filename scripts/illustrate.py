@@ -235,7 +235,7 @@ def main() -> int:
     # We name the image by the newest snapshot filename stem.
     feed_stem = feeds[0].stem
 
-    out_dir = artifact_image_dir(public_dir)
+    out_dir = artifact_image_dir(latest_path=latest_path)
     out_dir.mkdir(parents=True, exist_ok=True)
 
     fixed = safe_str(latest.get("image_fixed")).strip()
