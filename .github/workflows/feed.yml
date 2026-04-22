@@ -50,7 +50,7 @@ jobs:
         id: sel
         env:
           EVENT_NAME: ${{ github.event_name }}
-          REQUESTED_SLOT: ${{ github.event.inputs.slot || '' }}
+          REQUESTED_SLOT: ${{ inputs.slot || github.event.inputs.slot || 'event' }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GITHUB_API_URL: ${{ github.api_url }}
           GITHUB_REPOSITORY: ${{ github.repository }}
