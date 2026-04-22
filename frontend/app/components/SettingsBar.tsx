@@ -77,13 +77,6 @@ export default function SettingsBar({ title = "N2" }: Props) {
             }}>
               {title}
           </Text>
-          <Text style={{ 
-            fontWeight: "12",
-            color: "#fff"
-            }}
-          >
-            provides news for local and visitors.
-          </Text>
 
           <View
             style={{
@@ -143,13 +136,6 @@ export default function SettingsBar({ title = "N2" }: Props) {
               color: 
               "#fff" 
             }}>{title}</Text>
-            <Text style={{ 
-              fontWeight: "12",
-              color: "#fff"
-              }}
-            >
-              provides news for local and visitors.
-            </Text>
           </View>
         </View>
       )}
