@@ -49,87 +49,165 @@ def sort_key(it: dict[str, Any]) -> tuple[str, str]:
     return (primary, str(it.get("id") or ""))
 
 
-def normalize_permalink(item: dict[str, Any], base_url: str) -> None:
-    pid = str(item.get("id") or "").strip()
-    if not pid:
-        return
-    base = base_url.rstrip("/")
-    if base == ".":
-        item["permalink"] = f"./posts/{pid}/index.html"
-    else:
-        item["permalink"] = f"{base}/posts/{pid}/index.html"
+def to_public_image_url(rel_path: str) -> str:
+    rel = rel_path.replace("\\", "/").lstrip("./")
+    return f"./{rel}"
 
 
-def render_post_html(item: dict[str, Any]) -> str:
-    title = html.escape(str(item.get("kind") or "post"))
+def maybe_inject_image(item: dict[str, Any], feed_file: Path, public_dir: Path) -> dict[str, Any]:
+    """
+    Yokosuka-service style fix:
+    - For single-post snapshot files named feed_*.json, the filename stem is canonical.
+    - If item.image / item.image_url is missing, but public/image/<stem>.png exists,
+      inject that image path.
+    """
+    out = dict(item)
+
+    stem = feed_file.stem  # e.g. feed_20260422_123456
+    if stem.startswith("feed_"):
+        out["id"] = stem
+
+    image = str(out.get("image") or "").strip()
+    image_url = str(out.get("image_url") or "").strip()
+
+    if not image and not image_url:
+        candidate_rel = f"image/{stem}.png"
+        candidate_abs = public_dir / candidate_rel
+        if candidate_abs.exists():
+            injected = to_public_image_url(candidate_rel)
+            out["image"] = injected
+            out["image_url"] = injected
+
+    elif image and not image_url:
+        out["image_url"] = image
+    elif image_url and not image:
+        out["image"] = image_url
+
+    return out
+
+
+def build_index(items: list[dict[str, Any]]) -> dict[str, Any]:
+    return {
+        "count": len(items),
+        "items": items,
+    }
+
+
+def build_post_html(item: dict[str, Any]) -> str:
     text = html.escape(str(item.get("text") or item.get("tweet") or ""))
-    image = str(item.get("image") or "").strip()
-    image_html = (
-        f'<p><img src="../../{html.escape(image)}" alt="" style="max-width:100%;height:auto;" /></p>'
-        if image
-        else ""
-    )
+    study_point = html.escape(str(item.get("study_point") or ""))
+    translation_en = html.escape(str(item.get("translation_en") or ""))
+    image = str(item.get("image") or item.get("image_url") or "").strip()
 
-    return f"""<!doctype html>
-<html lang="en">
-<head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>{title}</title>
-</head>
-<body>
-  <main style="max-width:720px;margin:40px auto;padding:0 16px;font-family:sans-serif;line-height:1.6;">
-    <p><a href="../../index.html">← Back</a></p>
-    <h1>{title}</h1>
-    {image_html}
-    <p>{text}</p>
-  </main>
-</body>
-</html>
-"""
+    image_html = f'<p><img src="{html.escape(image)}" alt="" style="max-width:100%;height:auto;" /></p>' if image else ""
+
+    parts = [
+        "<!doctype html>",
+        '<html lang="ja">',
+        "<head>",
+        '  <meta charset="utf-8" />',
+        '  <meta name="viewport" content="width=device-width, initial-scale=1" />',
+        f"  <title>{text or 'Post'}</title>",
+        "</head>",
+        "<body>",
+        "  <main>",
+        f"    <p>{text}</p>" if text else "",
+        image_html,
+        f"    <p><strong>Study point:</strong> {study_point}</p>" if study_point else "",
+        f"    <p><strong>English:</strong> {translation_en}</p>" if translation_en else "",
+        "  </main>",
+        "</body>",
+        "</html>",
+    ]
+    return "\n".join(p for p in parts if p)
 
 
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--public-dir", default="frontend/app/public")
     parser.add_argument("--base-url", default=".")
+    parser.add_argument("--page-size", type=int, default=20)
     args = parser.parse_args()
 
     public_dir = Path(args.public_dir)
     feed_dir = public_dir / "feed"
-    latest_path = public_dir / "latest.json"
     posts_dir = public_dir / "posts"
+    latest_path = public_dir / "latest.json"
 
     feed_dir.mkdir(parents=True, exist_ok=True)
     posts_dir.mkdir(parents=True, exist_ok=True)
 
+    feed_files = sorted(feed_dir.glob("feed_*.json"))
     all_items: list[dict[str, Any]] = []
-    for path in sorted(feed_dir.glob("feed_*.json")):
-        all_items.extend(extract_items(path))
 
-    for item in all_items:
-        normalize_permalink(item, args.base_url)
+    for feed_file in feed_files:
+        raw_items = extract_items(feed_file)
+        for item in raw_items:
+            normalized = maybe_inject_image(item, feed_file, public_dir)
+
+            post_id = str(normalized.get("id") or feed_file.stem)
+            normalized["id"] = post_id
+            normalized["permalink"] = f"./posts/{post_id}/index.html"
+
+            all_items.append(normalized)
+
+            post_dir = posts_dir / post_id
+            post_dir.mkdir(parents=True, exist_ok=True)
+            (post_dir / "index.html").write_text(
+                build_post_html(normalized),
+                encoding="utf-8",
+            )
 
     all_items.sort(key=sort_key, reverse=True)
 
-    write_json(
-        feed_dir / "index.json",
-        {
-            "updated_at": all_items[0].get("created_at", "") if all_items else "",
-            "items": all_items,
-        },
-    )
+    page_size = max(1, int(args.page_size))
+    total_pages = (len(all_items) + page_size - 1) // page_size if all_items else 1
 
-    write_json(latest_path, all_items[0] if all_items else {})
+    page_paths: list[str] = []
+    for page_no in range(total_pages):
+        start = page_no * page_size
+        end = start + page_size
+        page_items = all_items[start:end]
 
-    for item in all_items:
-        pid = str(item.get("id") or "").strip()
-        if not pid:
-            continue
-        out = posts_dir / pid / "index.html"
-        out.parent.mkdir(parents=True, exist_ok=True)
-        out.write_text(render_post_html(item), encoding="utf-8")
+        page_name = f"page_{page_no:03d}.json"
+        page_path = feed_dir / page_name
+        page_paths.append(f"./feed/{page_name}")
 
+        payload: dict[str, Any] = {
+            "items": page_items,
+            "count": len(page_items),
+            "page": page_no,
+            "page_size": page_size,
+            "total_items": len(all_items),
+            "total_pages": total_pages,
+            "next_feed_url": f"./feed/page_{page_no + 1:03d}.json" if page_no + 1 < total_pages else "",
+        }
+        write_json(page_path, payload)
+
+    index_payload = {
+        "items": all_items,
+        "count": len(all_items),
+        "page_size": page_size,
+        "total_pages": total_pages,
+        "first_feed_url": "./feed/page_000.json" if page_paths else "",
+        "pages": page_paths,
+    }
+    write_json(feed_dir / "index.json", index_payload)
+
+    latest_payload = {
+        "feed_url": "./feed/page_000.json" if page_paths else "./feed/index.json",
+        "updated_at": all_items[0].get("created_at")
+        or all_items[0].get("generated_at")
+        or all_items[0].get("published_at")
+        or all_items[0].get("date")
+        if all_items
+        else "",
+    }
+    write_json(latest_path, latest_payload)
+
+    print(f"Wrote {len(all_items)} items from {len(feed_files)} feed snapshots")
+    print(f"Wrote feed index: {feed_dir / 'index.json'}")
+    print(f"Wrote latest pointer: {latest_path}")
     return 0
 
 
