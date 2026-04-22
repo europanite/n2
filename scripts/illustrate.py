@@ -46,8 +46,13 @@ def artifact_public_dir(*, latest_path: Path | None = None) -> Path:
     return lp.parent
 
 
-def artifact_latest_path() -> Path:
-    return Path(os.environ.get("LATEST_PATH", "frontend/app/public/latest.json"))
+def artifact_latest_path(public_dir: Path | None = None) -> Path:
+    override = (os.environ.get("LATEST_PATH") or "").strip()
+    if override:
+        return Path(override)
+    if public_dir is not None:
+        return Path(public_dir) / "latest.json"
+    return Path("frontend/app/public/latest.json")
 
 
 def artifact_feed_dir(*, latest_path: Path | None = None) -> Path:
