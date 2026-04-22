@@ -11,10 +11,10 @@ on:
     outputs:
       changed:
         description: "1 if feed files were updated"
-        value: ${{ jobs.fixed.outputs.changed }}
+        value: ${{ jobs.illustrate.outputs.changed }}
       sha:
         description: "Commit SHA that contains the generated feed"
-        value: ${{ jobs.fixed.outputs.sha }}
+        value: ${{ jobs.illustrate.outputs.sha }}
 
 permissions:
   actions: read
@@ -83,7 +83,6 @@ jobs:
             http://127.0.0.1:11434/api/pull \
             -d "{\"name\":\"${OLLAMA_CHAT_MODEL}\",\"stream\":false}"
 
-
       - name: Warm up Ollama model
         run: |
           set -euo pipefail
@@ -108,7 +107,6 @@ jobs:
 
           cat /tmp/ollama_warmup.json
 
-
           curl --fail --show-error \
             -H 'Content-Type: application/json' \
             http://127.0.0.1:11434/api/chat \
@@ -129,11 +127,8 @@ jobs:
           REQUEST_TIMEOUT: "300"
           MAX_RETRIES: "3"
           AVATAR_IMAGE: ${{ inputs.avatar_image }}
-          GITHUB_RUN_ID: ${{ github.run_id }}
         run: |
           set -euo pipefail
-
-          mkdir -p frontend/app/public/image
 
           python scripts/generate_sentence.py | tee /tmp/event_sentence_raw.txt
           sentence="$(tail -n 1 /tmp/event_sentence_raw.txt | tr -d '\r')"
@@ -144,13 +139,6 @@ jobs:
             exit 0
           fi
 
-          image_rel="image/event-${GITHUB_RUN_ID}.png"
-          image_abs="frontend/app/public/${image_rel}"
-
-          python scripts/generate_illustration.py "${sentence}" "${image_abs}"
-
-          test -f "${image_abs}"
-
           python - <<'PY'
           import json
           import os
@@ -160,7 +148,6 @@ jobs:
           payload = {
               "kind": "event",
               "text": sentence,
-              "image": f"image/event-{os.environ['GITHUB_RUN_ID']}.png",
               "avatar_image": os.environ.get("AVATAR_IMAGE", "image/avatar/event.png"),
               "links": [],
           }
@@ -206,9 +193,139 @@ jobs:
       entry_json: ${{ needs.prepare.outputs.entry_json }}
     secrets: inherit
 
-  stage_pages_state:
+  illustrate:
     needs: fixed
     if: needs.fixed.outputs.changed == '1'
+    runs-on: ubuntu-latest
+    outputs:
+      changed: ${{ steps.publish.outputs.changed }}
+      sha: ${{ steps.publish.outputs.sha }}
+    steps:
+      - name: Checkout (main)
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: Setup Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install deps
+        run: |
+          python -m pip install --upgrade pip
+          pip install requests
+
+      - name: Download fixed entry artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: fixed-entry-state-${{ github.run_id }}
+          path: /tmp/fixed-entry-state
+
+      - name: Restore fixed entry state
+        run: |
+          set -euo pipefail
+          mkdir -p frontend/app/public
+          tar -C frontend/app/public -xzf /tmp/fixed-entry-state/fixed-entry-state.tgz
+
+      - name: Choose style by JST hour
+        id: style
+        run: |
+          set -euo pipefail
+          HOUR=$(TZ=Asia/Tokyo date +%H)
+          if [ "$HOUR" -ge 4 ] && [ "$HOUR" -lt 18 ]; then
+            echo "use_camera=1" >> "$GITHUB_OUTPUT"
+            echo "INPUT_IMAGE=snapshot.jpg" >> $GITHUB_ENV
+            echo "MODE=img2img" >> $GITHUB_ENV
+            echo "LORA_PATH=" >> $GITHUB_ENV
+            echo "LORA_SCALE=0" >> $GITHUB_ENV
+            echo "MIRROR_AUG=1" >> $GITHUB_ENV
+            echo "STEPS=2" >> $GITHUB_ENV
+            echo "STRENGTH=0.2" >> $GITHUB_ENV
+            echo "GUIDANCE_SCALE=0.0" >> $GITHUB_ENV
+            echo "PROMPT=" >> $GITHUB_ENV
+            echo "NEGATIVE=" >> $GITHUB_ENV
+          else
+            echo "use_camera=0" >> $GITHUB_OUTPUT
+            echo "INPUT_IMAGE=" >> $GITHUB_ENV
+            echo "MODE=text2img" >> $GITHUB_ENV
+            echo "LORA_PATH=models/loras/ukiyoe.safetensors" >> $GITHUB_ENV
+            echo "LORA_SCALE=0.8" >> $GITHUB_ENV
+            echo "STEPS=6" >> $GITHUB_ENV
+            echo "GUIDANCE_SCALE=2.0" >> $GITHUB_ENV
+            echo "PROMPT=ukiyo-e, Japanese woodblock print, Edo period, bold black outlines, flat colors, washi paper texture, woodgrain, traditional print, moonlit night with lantern light, clear visibility, scene in {place}. Inspired by: {core}" >> $GITHUB_ENV
+            echo "NEGATIVE=photorealistic, realistic, 3d, CGI, anime, text, watermark, logo, low quality, blurry, underexposed, too dark" >> $GITHUB_ENV
+          fi
+
+      - name: Build illustrate image
+        env:
+          REACT_NATIVE_PACKAGER_HOSTNAME: "127.0.0.1"
+        run: |
+          set -euo pipefail
+          docker compose -f docker-compose.yml build illustrate
+
+      - name: Generate illustrated image and patch feed
+        env:
+          REACT_NATIVE_PACKAGER_HOSTNAME: "127.0.0.1"
+          PATCH_JSON: "1"
+          OUT_DIR: ""
+          MIRROR_AUG: "1"
+          SEED_OFFSET: "${{ github.run_number }}"
+          SDXL_MODEL_ID: stabilityai/sdxl-turbo
+        run: |
+          set -euo pipefail
+          test -f frontend/app/public/latest.json
+          docker compose -f docker-compose.yml run --rm illustrate
+
+      - name: Package illustrated state
+        id: publish
+        run: |
+          set -euo pipefail
+
+          PUBLIC_DIR="frontend/app/public"
+          LATEST_PATH_RESOLVED="$PUBLIC_DIR/latest.json"
+          FEED_DIR_RESOLVED="$PUBLIC_DIR/feed"
+          SNAPSHOT_DIR_RESOLVED="$PUBLIC_DIR/snapshot"
+          IMAGE_DIR_RESOLVED="$PUBLIC_DIR/image"
+
+          test -f "$LATEST_PATH_RESOLVED"
+          test -d "$FEED_DIR_RESOLVED"
+
+          STAGE_DIR=/tmp/fixed-entry-state
+          rm -rf "$STAGE_DIR"
+          mkdir -p "$STAGE_DIR/feed" "$STAGE_DIR/snapshot" "$STAGE_DIR/image"
+          cp "$LATEST_PATH_RESOLVED" "$STAGE_DIR/latest.json"
+
+          if [ -d "$FEED_DIR_RESOLVED" ]; then
+            cp -a "$FEED_DIR_RESOLVED"/. "$STAGE_DIR/feed/"
+          fi
+
+          if [ -d "$SNAPSHOT_DIR_RESOLVED" ]; then
+            cp -a "$SNAPSHOT_DIR_RESOLVED"/. "$STAGE_DIR/snapshot/"
+          fi
+
+          if [ -d "$IMAGE_DIR_RESOLVED" ]; then
+            cp -a "$IMAGE_DIR_RESOLVED"/. "$STAGE_DIR/image/"
+          fi
+
+          tar -C "$STAGE_DIR" -czf /tmp/fixed-entry-state.tgz .
+
+          echo "changed=1" >> "$GITHUB_OUTPUT"
+          echo "sha=${GITHUB_SHA}" >> "$GITHUB_OUTPUT"
+
+      - name: Upload illustrated state
+        if: steps.publish.outputs.changed == '1'
+        uses: actions/upload-artifact@v4
+        with:
+          name: fixed-entry-state-${{ github.run_id }}
+          path: /tmp/fixed-entry-state.tgz
+          if-no-files-found: error
+          retention-days: 1
+
+  stage_pages_state:
+    needs: illustrate
+    if: needs.illustrate.outputs.changed == '1'
     runs-on: ubuntu-latest
     permissions:
       actions: read
