@@ -60,11 +60,6 @@ jobs:
         with:
           python-version: "3.12"
 
-      - name: Generate latest.json
-        run: |
-          set -euo pipefail
-          python scripts/generate_pages.py
-
       - name: Show latest.json
         run: |
           set -euo pipefail
