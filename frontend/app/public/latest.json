@@ -1,14 +1,12 @@
 {
-  "kind": "unko",
-  "text": "今日はとても立派なうんこを生成した。",
-  "tweet": "今日はとても立派なうんこを生成した。",
-  "place": "N2",
-  "published_at": "2026-04-22T11:57:00.827412Z",
-  "created_at": "2026-04-22T11:57:00.827412Z",
-  "updated_at": "2026-04-22T11:57:00.827412Z",
-  "avatar_image": "image/avatar/normal.png",
-  "image": "image/avatar/normal.png",
-  "fixed_image": "",
+  "id": "fixed-event-20260422_212457",
+  "kind": "event",
+  "date": "2026-04-22",
+  "created_at": "2026-04-22T12:24:57Z",
+  "text": "「うんこは最後にトイレに行かなければなりませんね。」",
+  "tweet": "「うんこは最後にトイレに行かなければなりませんね。」",
+  "place": "",
   "links": [],
-  "weather": null
+  "avatar_image": "image/avatar/event.png",
+  "permalink": "./posts/fixed-event-20260422_212457/index.html"
 }

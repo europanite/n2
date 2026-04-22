@@ -131,7 +131,6 @@ jobs:
           set -euo pipefail
 
           python scripts/generate_sentence.py | tee /tmp/event_sentence_raw.txt
-          sentence="$(tail -n 1 /tmp/event_sentence_raw.txt | tr -d '\r')"
 
           if [ -z "${sentence}" ]; then
             echo "Generated sentence is empty" >&2
@@ -140,16 +139,18 @@ jobs:
           fi
 
           python - <<'PY'
-          import json
           import os
+          import json
           from pathlib import Path
 
-          sentence = Path("/tmp/event_sentence_raw.txt").read_text(encoding="utf-8").splitlines()[-1].strip()
+          raw = Path("/tmp/event_sentence_raw.txt").read_text(encoding="utf-8")
+          data = json.loads(raw)
+
           payload = {
               "kind": "event",
-              "text": sentence,
-              "avatar_image": os.environ.get("AVATAR_IMAGE", "image/avatar/event.png"),
-              "links": [],
+              "text": data["text"],
+              "study_point": data.get("study_point", ""),
+              "translation_en": data.get("translation_en", ""),
           }
 
           Path("/tmp/event_entry.json").write_text(
@@ -250,7 +251,6 @@ jobs:
       CURL_RETRIES: "0"
       MAX_CHARS: "220"
       TZ_NAME: "Asia/Tokyo"
-      PLACE: "Yokosuka, Kanagawa, JP"
       HASHTAGS: ""
       FEED_PATH: "frontend/app/public"
       LATEST_PATH: "frontend/app/public/latest.json"
@@ -354,13 +354,10 @@ jobs:
           RAG_CHROMA_S3_PREFIX=rag/chroma
           RAG_CHROMA_LOCAL_DIR=./chroma_db_seed
 
-          LAT=35.2810
-          LON=139.6722
           CURL_MAX_TIME=512
           CURL_RETRIES=0
           MAX_CHARS=220
           TZ_NAME=Asia/Tokyo
-          PLACE=Yokosuka, Kanagawa, JP
           HASHTAGS=
           FEED_PATH=frontend/app/public
           LATEST_PATH=frontend/app/public/latest.json

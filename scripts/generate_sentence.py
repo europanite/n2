@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 import os
 import sys
 from pathlib import Path
@@ -91,6 +92,37 @@ def is_valid_sentence(text: str) -> bool:
     return True
 
 
+def extract_json_payload(raw: str) -> dict[str, str]:
+    normalized = normalize_output(raw)
+
+    try:
+        data = json.loads(normalized)
+    except json.JSONDecodeError as exc:
+        raise ValueError(f"output is not valid JSON: {normalized}") from exc
+
+    if not isinstance(data, dict):
+        raise ValueError("output JSON must be an object")
+
+    text = str(data.get("text", "")).strip()
+    study_point = str(data.get("study_point", "")).strip()
+    translation_en = str(data.get("translation_en", "")).strip()
+
+    if not is_valid_sentence(text):
+        raise ValueError(f"invalid text field: {text}")
+
+    if not study_point:
+        raise ValueError("study_point is empty")
+
+    if not translation_en:
+        raise ValueError("translation_en is empty")
+
+    return {
+        "text": text,
+        "study_point": study_point,
+        "translation_en": translation_en,
+    }
+
+
 def main() -> int:
     settings = load_settings()
     prompt = load_prompt(str(settings["prompt_path"]))
@@ -104,19 +136,15 @@ def main() -> int:
                 prompt=prompt,
                 timeout=int(settings["request_timeout"]),
             )
-            normalized = normalize_output(raw)
-            last_output = normalized
-            if is_valid_sentence(normalized):
-                print(normalized)
-                return 0
-            print(
-                f"[retry {attempt}] invalid output: {normalized}",
-                file=sys.stderr,
-            )
-        except requests.RequestException as exc:
-            print(f"[retry {attempt}] request failed: {exc}", file=sys.stderr)
+            last_output = normalize_output(raw)
+            payload = extract_json_payload(raw)
+            print(json.dumps(payload, ensure_ascii=False))
+            return 0
 
-    print("Failed to generate a valid sentence.", file=sys.stderr)
+        except (requests.RequestException, ValueError) as exc:
+            print(f"[retry {attempt}] invalid output: {last_output or exc}", file=sys.stderr)
+
+    print("Failed to generate a valid sentence JSON.", file=sys.stderr)
     if last_output:
         print(f"Last output: {last_output}", file=sys.stderr)
     return 1

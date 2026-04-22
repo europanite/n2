@@ -42,7 +42,6 @@ services:
       PATCH_JSON: ${PATCH_JSON:-1}
       OUT_DIR: ${OUT_DIR:-frontend/app/public/image}
       OUT_NAME: ${OUT_NAME:-}
-      PLACE: ${PLACE:-}
       STEPS: ${STEPS:-2}
       STRENGTH: ${STRENGTH:-0.8}
       GUIDANCE_SCALE: ${GUIDANCE_SCALE:-2.0}
@@ -96,10 +95,7 @@ services:
       RAG_INDEX_FAIL_FAST: ${RAG_INDEX_FAIL_FAST}
       RAG_CHUNK_SIZE: ${RAG_CHUNK_SIZE}
       RAG_TOP_K: ${RAG_TOP_K:-8}
-      LAT: ${LAT}
-      LON: ${LON}
       TZ_NAME: ${TZ_NAME}
-      PLACE: ${PLACE}
       HASHTAGS: ${HASHTAGS}
       REACT_NATIVE_PACKAGER_HOSTNAME: ${REACT_NATIVE_PACKAGER_HOSTNAME:-127.0.0.1}
       FEED_PATH: ${FEED_PATH}
