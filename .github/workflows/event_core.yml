@@ -133,6 +133,8 @@ jobs:
         run: |
           set -euo pipefail
 
+          mkdir -p frontend/app/public/image
+
           python scripts/generate_sentence.py | tee /tmp/event_sentence_raw.txt
           sentence="$(tail -n 1 /tmp/event_sentence_raw.txt | tr -d '\r')"
 
@@ -141,6 +143,13 @@ jobs:
             echo "changed=0" >> "$GITHUB_OUTPUT"
             exit 0
           fi
+
+          image_rel="image/event-${GITHUB_RUN_ID}.png"
+          image_abs="frontend/app/public/${image_rel}"
+
+          python scripts/generate_illustration.py "${sentence}" "${image_abs}"
+
+          test -f "${image_abs}"
 
           python - <<'PY'
           import json
@@ -151,6 +160,7 @@ jobs:
           payload = {
               "kind": "event",
               "text": sentence,
+              "image": f"image/event-{os.environ['GITHUB_RUN_ID']}.png",
               "avatar_image": os.environ.get("AVATAR_IMAGE", "image/avatar/event.png"),
               "links": [],
           }
