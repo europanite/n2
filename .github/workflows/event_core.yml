@@ -246,8 +246,6 @@ jobs:
       RAG_CHROMA_S3_PREFIX: "rag/chroma"
       RAG_CHROMA_LOCAL_DIR: "./chroma_db_seed"
 
-      LAT: "35.2811"
-      LON: "139.6720"
       CURL_MAX_TIME: "512"
       CURL_RETRIES: "0"
       MAX_CHARS: "220"
@@ -262,6 +260,17 @@ jobs:
       EXPO_PUBLIC_FEED_JSON_URL: ""
       EXPO_PUBLIC_SHARE_SD_INDEX_URL: ""
       EXPO_PUBLIC_FEEDBACK_FORM_URL: ""
+
+      INPUT_IMAGE: ""
+      MODE: "text2img"
+      LORA_PATH: ""
+      LORA_SCALE: "0"
+      MIRROR_AUG: "0"
+      STEPS: "6"
+      GUIDANCE_SCALE: "2.0"
+      PROMPT: "illustration, clear composition, soft lighting, suitable for an event post, scene in {place}. Inspired by: {core}"
+      NEGATIVE: "photorealistic, text, watermark, logo, low quality, blurry, underexposed, too dark"
+
     outputs:
       changed: ${{ steps.publish.outputs.changed }}
       sha: ${{ steps.publish.outputs.sha }}
@@ -293,36 +302,6 @@ jobs:
           set -euo pipefail
           mkdir -p frontend/app/public
           tar -C frontend/app/public -xzf /tmp/fixed-entry-state/fixed-entry-state.tgz
-
-      - name: Choose style by JST hour
-        id: style
-        run: |
-          set -euo pipefail
-          HOUR=$(TZ=Asia/Tokyo date +%H)
-
-          if [ "$HOUR" -ge 4 ] && [ "$HOUR" -lt 18 ]; then
-            echo "use_camera=1" >> "$GITHUB_OUTPUT"
-            echo "INPUT_IMAGE=snapshot.jpg" >> $GITHUB_ENV
-            echo "MODE=img2img" >> $GITHUB_ENV
-            echo "LORA_PATH=" >> $GITHUB_ENV
-            echo "LORA_SCALE=0" >> $GITHUB_ENV
-            echo "MIRROR_AUG=1" >> $GITHUB_ENV
-            echo "STEPS=2" >> $GITHUB_ENV
-            echo "STRENGTH=0.2" >> $GITHUB_ENV
-            echo "GUIDANCE_SCALE=0.0" >> $GITHUB_ENV
-            echo "PROMPT=" >> $GITHUB_ENV
-            echo "NEGATIVE=" >> $GITHUB_ENV
-          else
-            echo "use_camera=0" >> $GITHUB_OUTPUT
-            echo "INPUT_IMAGE=" >> $GITHUB_ENV
-            echo "MODE=text2img" >> $GITHUB_ENV
-            echo "LORA_PATH=models/loras/ukiyoe.safetensors" >> $GITHUB_ENV
-            echo "LORA_SCALE=0.8" >> $GITHUB_ENV
-            echo "STEPS=6" >> $GITHUB_ENV
-            echo "GUIDANCE_SCALE=2.0" >> $GITHUB_ENV
-            echo "PROMPT=ukiyo-e, Japanese woodblock print, Edo period, bold black outlines, flat colors, washi paper texture, woodgrain, traditional print, moonlit night with lantern light, clear visibility, scene in {place}. Inspired by: {core}" >> $GITHUB_ENV
-            echo "NEGATIVE=photorealistic, realistic, 3d, CGI, anime, text, watermark, logo, low quality, blurry, underexposed, too dark" >> $GITHUB_ENV
-          fi
 
       - name: Create compose env file for illustrate
         run: |
