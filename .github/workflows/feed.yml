@@ -6,19 +6,18 @@ on:
   workflow_call:
     inputs:
       slot:
-        description: "Which slot to run (auto = decide by schedule gate)"
+        description: "Which slot to run"
         required: false
         type: string
-        default: "auto"
+        default: "event"
   workflow_dispatch:
     inputs:
       slot:
-        description: "Which slot to run (auto = decide by schedule gate)"
+        description: "Which slot to run"
         required: false
-        default: "auto"
+        default: "event"
         type: choice
         options:
-          - auto
           - event
 
 permissions:
