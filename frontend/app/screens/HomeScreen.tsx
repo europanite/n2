@@ -1510,10 +1510,16 @@ export default function HomeScreen() {
     setEffectiveUrl(RESOLVED_FEED_URL);
   }, [RESOLVED_FEED_URL]);
 
-  // Read ?post=<id> on web
+  // Read /posts/<id>/ or ?post=<id> on web
   useEffect(() => {
     if (Platform.OS !== "web" || typeof window === "undefined") return;
     try {
+      const pathMatch = window.location.pathname.match(/(?:^|\/)posts\/([^/]+)(?:\/index\.html)?\/?$/);
+      const pathPid = pathMatch?.[1] ? decodeURIComponent(pathMatch[1]) : "";
+      if (pathPid) {
+        setDeepLinkPostId(pathPid);
+        return;
+      }
       const sp = new URLSearchParams(window.location.search);
       const pid = sp.get("post");
       if (pid) setDeepLinkPostId(pid);

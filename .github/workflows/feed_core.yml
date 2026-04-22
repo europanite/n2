@@ -180,8 +180,11 @@ jobs:
 
           PUBLIC_DIR="${ARTIFACT_PUBLIC_DIR:-frontend/app/public}"
           LATEST_PATH_RESOLVED="${ARTIFACT_LATEST_PATH:-$PUBLIC_DIR/latest.json}"
+
           FEED_DIR_RESOLVED="${ARTIFACT_FEED_DIR:-$PUBLIC_DIR/feed}"
           SNAPSHOT_DIR_RESOLVED="${ARTIFACT_SNAPSHOT_DIR:-$(dirname "$LATEST_PATH_RESOLVED")/snapshot}"
+          POST_DIR_RESOLVED="$PUBLIC_DIR/posts"
+          IMAGE_DIR_RESOLVED="${ARTIFACT_IMAGE_DIR:-$PUBLIC_DIR/image}"
 
           if [ ! -f "$LATEST_PATH_RESOLVED" ]; then
             echo "No generated latest.json"
@@ -351,8 +354,10 @@ jobs:
 
           PUBLIC_DIR="${ARTIFACT_PUBLIC_DIR:-frontend/app/public}"
           LATEST_PATH_RESOLVED="${ARTIFACT_LATEST_PATH:-$PUBLIC_DIR/latest.json}"
+
           FEED_DIR_RESOLVED="${ARTIFACT_FEED_DIR:-$PUBLIC_DIR/feed}"
           SNAPSHOT_DIR_RESOLVED="${ARTIFACT_SNAPSHOT_DIR:-$(dirname "$LATEST_PATH_RESOLVED")/snapshot}"
+          POST_DIR_RESOLVED="$PUBLIC_DIR/posts"
           IMAGE_DIR_RESOLVED="${ARTIFACT_IMAGE_DIR:-$PUBLIC_DIR/image}"
 
           test -f "$LATEST_PATH_RESOLVED"
@@ -360,7 +365,7 @@ jobs:
 
           STAGE_DIR=/tmp/pages-state
           rm -rf "$STAGE_DIR"
-          mkdir -p "$STAGE_DIR/feed" "$STAGE_DIR/snapshot" "$STAGE_DIR/image"
+          mkdir -p "$STAGE_DIR/feed" "$STAGE_DIR/snapshot" "$STAGE_DIR/posts" "$STAGE_DIR/image"
           cp "$LATEST_PATH_RESOLVED" "$STAGE_DIR/latest.json"
 
           if [ -d "$FEED_DIR_RESOLVED" ]; then
