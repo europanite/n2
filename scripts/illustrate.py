@@ -55,9 +55,10 @@ def artifact_latest_path(public_dir: Path | None = None) -> Path:
     return Path("frontend/app/public/latest.json")
 
 
-def artifact_feed_dir(*, latest_path: Path | None = None) -> Path:
-    return artifact_public_dir(latest_path=latest_path) / "feed"
-
+def artifact_feed_dir(public_dir: Path | None = None) -> Path:
+    if public_dir is not None:
+        return Path(public_dir) / "feed"
+    return artifact_public_dir() / "feed"
 
 def artifact_image_dir(*, latest_path: Path | None = None) -> Path:
     override = (os.environ.get("OUT_DIR") or "").strip()
