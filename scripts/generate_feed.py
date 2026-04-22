@@ -7,6 +7,8 @@ PUBLIC_DIR = Path("frontend/app/public")
 LATEST_PATH = PUBLIC_DIR / "latest.json"
 FEED_DIR = PUBLIC_DIR / "feed"
 SNAPSHOT_DIR = PUBLIC_DIR / "snapshot"
+IMAGE_DIR = PUBLIC_DIR / "image" / "generated"
+DEFAULT_IMAGE = "image/avatar/normal.png"
 
 
 def utc_now_iso_z() -> str:
@@ -34,9 +36,28 @@ def generate_sentence() -> str:
     return "今日はとても立派なうんこを生成した。"
 
 
-def build_entry(sentence: str) -> dict:
+def generate_image(sentence: str) -> tuple[str, str | None]:
+    IMAGE_DIR.mkdir(parents=True, exist_ok=True)
+    output_name = f"unko_{local_stamp()}.png"
+    output_path = IMAGE_DIR / output_name
+
+    result = subprocess.run(
+        ["python", "scripts/generate_illustration.py", sentence, str(output_path)],
+        capture_output=True,
+        text=True,
+        timeout=180,
+        check=False,
+    )
+    if result.returncode != 0 or not output_path.exists():
+        return DEFAULT_IMAGE, None
+
+    prompt = result.stdout.strip() or None
+    return f"image/generated/{output_name}", prompt
+
+
+def build_entry(sentence: str, image_path: str, image_prompt: str | None) -> dict:
     now = utc_now_iso_z()
-    return {
+    entry = {
         "kind": "unko",
         "text": sentence,
         "tweet": sentence,
@@ -44,17 +65,21 @@ def build_entry(sentence: str) -> dict:
         "published_at": now,
         "created_at": now,
         "updated_at": now,
-        "avatar_image": "image/avatar/normal.png",
-        "image": "image/avatar/normal.png",
+        "avatar_image": DEFAULT_IMAGE,
+        "image": image_path,
         "fixed_image": "",
         "links": [],
         "weather": None,
     }
+    if image_prompt:
+        entry["image_prompt"] = image_prompt
+    return entry
 
 
 def main() -> int:
     sentence = generate_sentence()
-    entry = build_entry(sentence)
+    image_path, image_prompt = generate_image(sentence)
+    entry = build_entry(sentence, image_path, image_prompt)
 
     PUBLIC_DIR.mkdir(parents=True, exist_ok=True)
     FEED_DIR.mkdir(parents=True, exist_ok=True)
