@@ -104,7 +104,7 @@ jobs:
           python -m pip install --upgrade pip
           pip install requests
 
-      - name: Build fixed entry (no RAG)
+      - name: Build fixed entry
         shell: bash
         run: |
           set -euo pipefail
@@ -197,6 +197,32 @@ jobs:
 
           print("OK: fixed entry generated without generate_talk.py")
           PY
+
+      - name: Commit generated public state
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+          git pull --ff-only origin main
+
+          git add frontend/app/public/latest.json
+          git add frontend/app/public/feed
+          git add frontend/app/public/snapshot
+
+          if [ -d frontend/app/public/image ]; then
+            git add frontend/app/public/image
+          fi
+
+          if git diff --cached --quiet; then
+            echo "No changes to commit."
+            exit 0
+          fi
+
+          git commit -m "chore: append generated public feed state"
+          git push origin HEAD:main
 
       - name: Package fixed entry artifacts
         id: publish
