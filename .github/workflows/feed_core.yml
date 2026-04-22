@@ -333,6 +333,7 @@ jobs:
         run: |
           set -euo pipefail
           docker compose -f docker-compose.yml build illustrate
+
       - name: Generate illustrated image and patch feed
         env:
           # arrange(img2img)
@@ -346,6 +347,13 @@ jobs:
           set -euo pipefail
           test -f "${ARTIFACT_LATEST_PATH:-frontend/app/public/latest.json}"
           docker compose -f docker-compose.yml run --rm illustrate
+
+      - name: Rebuild feed index and post pages after illustration
+        run: |
+          set -euo pipefail
+          python -m pip install --upgrade pip
+          pip install requests
+          python scripts/build_feed_pages.py --public-dir frontend/app/public --base-url .
 
       - name: Package generated state for downstream jobs
         id: publish

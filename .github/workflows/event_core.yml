@@ -392,6 +392,13 @@ jobs:
           test -f frontend/app/public/latest.json
           docker compose --env-file /tmp/event-compose.env -f docker-compose.yml run --rm illustrate
 
+      - name: Rebuild feed index and post pages after illustration
+        run: |
+          set -euo pipefail
+          python -m pip install --upgrade pip
+          pip install requests
+          python scripts/build_feed_pages.py --public-dir frontend/app/public --base-url .
+
       - name: Package illustrated state
         id: publish
         run: |
