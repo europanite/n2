@@ -1662,10 +1662,19 @@ const getImageUrisForItem = useCallback(
     // 1) Direct field (best)
     if (item.image) push(item.image);
 
-    // 2) Stem-match rule: if id looks like feed stem, try /image/<id>.png
+    // 2) Stem-match rule: if id looks like feed stem, try common image extensions
     const id = String(item.id ?? "").trim();
     if (id && id.startsWith("feed_")) {
-      push(`/image/${encodeURIComponent(id)}.png`);
+      const encodedId = encodeURIComponent(id);
+      ["png", "jpg", "jpeg", "webp"].forEach((ext) => {
+        push(`/image/${encodedId}.${ext}`);
+      });
+    }
+
+    const image = String(item.image ?? "").trim();
+    if (!image && id && id.startsWith("feed_")) {
+      const encodedId = encodeURIComponent(id);
+      ["png", "jpg", "jpeg", "webp"].forEach((ext) => push(`./image/${encodedId}.${ext}`));
     }
 
     // 3) Optional: share_sd index match (if configured)

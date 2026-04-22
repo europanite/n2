@@ -71,12 +71,14 @@ def maybe_inject_image(item: dict[str, Any], feed_file: Path, public_dir: Path) 
     image_url = str(out.get("image_url") or "").strip()
 
     if not image and not image_url:
-        candidate_rel = f"image/{stem}.png"
-        candidate_abs = public_dir / candidate_rel
-        if candidate_abs.exists():
-            injected = to_public_image_url(candidate_rel)
-            out["image"] = injected
-            out["image_url"] = injected
+        for ext in ("png", "jpg", "jpeg", "webp"):
+            candidate_rel = f"image/{stem}.{ext}"
+            candidate_abs = public_dir / candidate_rel
+            if candidate_abs.exists():
+                injected = to_public_image_url(candidate_rel)
+                out["image"] = injected
+                out["image_url"] = injected
+                break
 
     elif image and not image_url:
         out["image_url"] = image
