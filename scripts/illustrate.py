@@ -5,10 +5,12 @@ Generate an illustration image for the latest post and patch feed JSON(s) to ref
 - Reads:  LATEST_PATH (default: frontend/app/public/latest.json)
 - Writes: frontend/app/public/image/<feed_stem>.png
 - Patches:
-  - latest.json (entry fields)
   - feed snapshot file (feed/feed_<...>.json) in BOTH shapes:
       * {"items":[...]} (legacy)
       * {date,text,...} (current single-object)
+
+Supports BOTH latest.json shapes:
+- entry object shape and pointer shape {"feed_url":"./feed/page_000.json","updated_at":"..."}
 """
 
 from __future__ import annotations
@@ -100,6 +102,75 @@ def _render(t: str, *, place: str, core: str) -> str:
     p = place or "Yokosuka, Japan"
     return s.replace("{place}", p).replace("{core}", core)
 
+
+def newest_feed_snapshot(feed_dir: Path) -> Optional[Path]:
+    candidates = sorted(
+        feed_dir.glob("feed_*.json"),
+        key=lambda p: p.stat().st_mtime,
+        reverse=True,
+    )
+    return candidates[0] if candidates else None
+
+
+def resolve_latest_entry(latest_path: Path) -> tuple[dict[str, Any], Path]:
+    """
+    Resolve the current target entry for illustration.
+
+    Returns:
+      (entry_dict, snapshot_feed_path)
+    """
+    public_dir = artifact_public_dir(latest_path=latest_path)
+    feed_dir = artifact_feed_dir(public_dir)
+
+    latest_obj = load_json(latest_path)
+    if not isinstance(latest_obj, dict):
+        raise SystemExit("ERROR: latest.json is not a JSON object")
+
+    if safe_str(latest_obj.get("date")).strip() and safe_str(latest_obj.get("text")).strip():
+        feed_stem = safe_str(latest_obj.get("id")).strip()
+        if feed_stem:
+            snap = feed_dir / f"{feed_stem}.json"
+            if snap.exists():
+                return latest_obj, snap
+            snap = feed_dir / f"feed_{feed_stem}.json"
+            if snap.exists():
+                return latest_obj, snap
+
+        snap = newest_feed_snapshot(feed_dir)
+        if snap is None:
+            raise SystemExit("ERROR: could not determine latest feed snapshot")
+        return latest_obj, snap
+
+    feed_url = safe_str(latest_obj.get("feed_url")).strip()
+    if not feed_url:
+        raise SystemExit("ERROR: latest.json missing date/text and feed_url")
+
+    rel = feed_url.replace("\\", "/").lstrip("./")
+    page_path = public_dir / rel
+    if not page_path.exists():
+        raise SystemExit(f"ERROR: feed page referenced by latest.json was not found: {page_path}")
+
+    page_obj = load_json(page_path)
+    items = page_obj.get("items") if isinstance(page_obj, dict) else None
+    if not isinstance(items, list) or not items:
+        raise SystemExit(f"ERROR: feed page has no items: {page_path}")
+
+    entry = items[0]
+    if not isinstance(entry, dict):
+        raise SystemExit(f"ERROR: first feed page item is not an object: {page_path}")
+
+    feed_stem = safe_str(entry.get("id")).strip()
+    if not feed_stem:
+        raise SystemExit("ERROR: first feed page item has no id")
+
+    snap = feed_dir / f"{feed_stem}.json"
+    if not snap.exists():
+        snap = newest_feed_snapshot(feed_dir)
+        if snap is None:
+            raise SystemExit(f"ERROR: snapshot not found for id={feed_stem}")
+
+    return entry, snap
+
 def build_prompt(text: str, place: str) -> tuple[str, str]:
     core = " ".join((text or "").split()).strip()[:240]
     p = (place or "").strip()
@@ -185,6 +256,28 @@ def patch_feed_file(
         dump_json(feed_path, obj)
     return changed
 
+
+def patch_latest_entry_object_only(latest_path: Path, rel_image_url: str, now_iso: str) -> bool:
+    """
+    Patch latest.json only when it is still an entry-object shape.
+    Leave pointer latest.json untouched.
+    """
+    obj = load_json(latest_path)
+    if not isinstance(obj, dict):
+        return False
+
+    if not (safe_str(obj.get("date")).strip() and safe_str(obj.get("text")).strip()):
+        return False
+
+    obj["image"] = rel_image_url
+    obj["image_url"] = rel_image_url
+    obj["image_generated_at"] = now_iso
+    avatar_image = safe_str(obj.get("avatar_image")).strip()
+    if avatar_image:
+        obj["avatar_url"] = resolve_public_avatar_url(avatar_image)
+    dump_json(latest_path, obj)
+    return True
+
 def resolve_fixed_image_path(value: str, public_dir: Path) -> Path:
     """Resolve a fixed image path from latest.json (value may be absolute, repo-relative, or FEED_PATH-relative)."""
     v = (value or "").strip()
@@ -212,33 +305,27 @@ def main() -> int:
         print(f"ERROR: latest.json not found: {latest_path}")
         return 2
 
-    latest = load_json(latest_path)
-    if not isinstance(latest, dict):
-        print("ERROR: latest.json is not an object")
-        return 2
+    entry, feed_path = resolve_latest_entry(latest_path)
 
-    date = safe_str(latest.get("date")).strip()
-    text = safe_str(latest.get("text")).strip()
-    place = safe_str(latest.get("place")).strip()
-    generated_at = safe_str(latest.get("generated_at")).strip()
+    date = safe_str(entry.get("date")).strip()
+    text = safe_str(entry.get("text") or entry.get("tweet")).strip()
+    place = safe_str(entry.get("place")).strip()
+    generated_at = safe_str(
+        entry.get("created_at") or entry.get("generated_at") or entry.get("published_at")
+    ).strip()
 
     if not date or not text:
-        print("ERROR: latest.json missing date/text")
+        print("ERROR: resolved entry missing date/text")
         return 2
 
     feed_dir = artifact_feed_dir(public_dir)
     feeds = sorted(feed_dir.glob("feed_*.json"), reverse=True)
-    if not feeds:
-        print(f"ERROR: No feed snapshots found in {feed_dir}")
-        return 2
-
-    # We name the image by the newest snapshot filename stem.
-    feed_stem = feeds[0].stem
+    feed_stem = feed_path.stem
 
     out_dir = artifact_image_dir(latest_path=latest_path)
     out_dir.mkdir(parents=True, exist_ok=True)
 
-    fixed = safe_str(latest.get("image_fixed")).strip()
+    fixed = safe_str(entry.get("image_fixed") or entry.get("fixed_image")).strip()
     lora_tag = ""
     image_model = MODEL_ID
 
@@ -306,29 +393,16 @@ def main() -> int:
     rel_image_url = resolve_public_image_url(out_path)
     now_iso = now_iso_utc()
 
-    # Patch latest.json entry
-    old_latest_id = safe_str(latest.get("id")).strip()
-    if old_latest_id and old_latest_id != feed_stem and "legacy_id" not in latest:
-        latest["legacy_id"] = old_latest_id
-    latest["id"] = feed_stem
-    latest["permalink"] = f"./?post={feed_stem}"
-    latest["image"] = rel_image_url
-    latest["image_url"] = rel_image_url
-    avatar_image = safe_str(latest.get("avatar_image")).strip()
-    if avatar_image:
-        latest["avatar_url"] = resolve_public_avatar_url(avatar_image)
-    latest["image_prompt"] = prompt
-    latest["image_negative"] = negative
-    latest["image_model"] = image_model
-    if lora_tag:
-        latest["image_lora"] = lora_tag
-        latest["image_lora_scale"] = float(LORA_SCALE)
-    latest["image_generated_at"] = now_iso
-    dump_json(latest_path, latest)
+    patched_latest = patch_latest_entry_object_only(
+        latest_path=latest_path,
+        rel_image_url=rel_image_url,
+        now_iso=now_iso,
+    )
+    print(f"patched_latest_entry_object={patched_latest}")
 
-    # Patch the newest snapshot feed file (current single-object or legacy items list)
+    # Patch the resolved snapshot feed file first.
     patched = patch_feed_file(
-        feeds[0],
+        feed_path,
         date=date,
         text=text,
         generated_at=generated_at,
@@ -341,7 +415,25 @@ def main() -> int:
         image_lora=lora_tag,
         image_lora_scale=float(LORA_SCALE),
     )
-    print(f"patched_snapshot={patched} path={feeds[0]}")
+    print(f"patched_snapshot={patched} path={feed_path}")
+
+    for extra_feed in feeds:
+        if extra_feed == feed_path:
+            continue
+        patch_feed_file(
+            extra_feed,
+            date=date,
+            text=text,
+            generated_at=generated_at,
+            feed_stem=feed_stem,
+            rel_image_url=rel_image_url,
+            image_prompt=prompt,
+            image_negative=negative,
+            image_model=image_model,
+            image_generated_at=now_iso,
+            image_lora=lora_tag,
+            image_lora_scale=float(LORA_SCALE),
+        )
 
     # (Optional) Patch legacy aggregations if they exist
     for legacy in [
