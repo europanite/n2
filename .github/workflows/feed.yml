@@ -19,12 +19,7 @@ on:
         type: choice
         options:
           - auto
-          - spot
-          - cheatsheet
-          - restaurant
           - event
-          - spot_intro
-          - activity
 
 permissions:
   actions: read
@@ -94,76 +89,10 @@ jobs:
           echo "window_id=${{ steps.sel.outputs.window_id }}"
           echo "reason=${{ steps.sel.outputs.reason }}"
 
-  sspot:
-    needs: select
-    if: needs.select.outputs.should_run == 'true' && needs.select.outputs.slot == 'spot'
-    uses: ./.github/workflows/feed_slot_spot.yml
-    permissions:
-      actions: read
-      contents: write
-      pages: write
-      id-token: write
-    secrets: inherit
-
-  sgarbage:
-    needs: select
-    if: false
-    uses: ./.github/workflows/feed_slot_garbage.yml
-    permissions:
-      actions: read
-      contents: write
-      pages: write
-      id-token: write
-    secrets: inherit
-
-  scheatsheet:
-    needs: select
-    if: needs.select.outputs.should_run == 'true' && needs.select.outputs.slot == 'cheatsheet'
-    uses: ./.github/workflows/cheatsheet.yml
-    permissions:
-      actions: read
-      contents: write
-      pages: write
-      id-token: write
-    secrets: inherit
-
-  srestaurant:
-    needs: select
-    if: needs.select.outputs.should_run == 'true' && needs.select.outputs.slot == 'restaurant'
-    uses: ./.github/workflows/feed_slot_restaurant.yml
-    permissions:
-      actions: read
-      contents: write
-      pages: write
-      id-token: write
-    secrets: inherit
-
   sevent:
     needs: select
     if: needs.select.outputs.should_run == 'true' && needs.select.outputs.slot == 'event'
     uses: ./.github/workflows/feed_slot_event.yml
-    permissions:
-      actions: read
-      contents: write
-      pages: write
-      id-token: write
-    secrets: inherit
-
-  sspot_intro:
-    needs: select
-    if: needs.select.outputs.should_run == 'true' && needs.select.outputs.slot == 'spot_intro'
-    uses: ./.github/workflows/feed_slot_spot_intro.yml
-    permissions:
-      actions: read
-      contents: write
-      pages: write
-      id-token: write
-    secrets: inherit
-
-  sactivity:
-    needs: select
-    if: needs.select.outputs.should_run == 'true' && needs.select.outputs.slot == 'activity'
-    uses: ./.github/workflows/feed_slot_activity.yml
     permissions:
       actions: read
       contents: write
