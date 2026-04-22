@@ -84,6 +84,7 @@ jobs:
         env:
           CI: "1"
           EXPO_NO_TELEMETRY: "1"
+          EXPO_PUBLIC_FEED_URL: "./feed/index.json"
         run: |
           set -euo pipefail
           npx expo export --platform web --output-dir web-build

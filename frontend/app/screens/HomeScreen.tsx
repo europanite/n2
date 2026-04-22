@@ -1451,7 +1451,7 @@ export default function HomeScreen() {
   const listRef = useRef<FlatList<TimelineItem>>(null);
   const deepLinkAttemptsRef = useRef<number>(0);
   const [deepLinkPostId, setDeepLinkPostId] = useState<string | null>(null);
-  const FEED_URL = (process.env.EXPO_PUBLIC_FEED_URL || process.env.EXPO_PUBLIC_FEED_JSON_URL || "./latest.json").trim();
+  const FEED_URL = (process.env.EXPO_PUBLIC_FEED_URL || process.env.EXPO_PUBLIC_FEED_JSON_URL || "./feed/index.json").trim();
   const ASSET_BASE_URL = (process.env.EXPO_PUBLIC_ASSET_BASE_URL || "").trim();
   const FEED_BASE_URL = (process.env.EXPO_PUBLIC_FEED_BASE_URL || ASSET_BASE_URL || "").trim();
   const IMAGE_BASE_URL = (process.env.EXPO_PUBLIC_IMAGE_BASE_URL || ASSET_BASE_URL || "").trim();
