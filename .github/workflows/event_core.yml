@@ -118,39 +118,61 @@ jobs:
         run: |
           set -euo pipefail
           python -m pip install --upgrade pip
-          pip install requests beautifulsoup4
+          pip install requests beautifulsoup4 python-dotenv
 
       - name: Generate future event payload
         id: generate
         env:
-          LLM_PROVIDER: ollama
           OLLAMA_BASE_URL: "http://127.0.0.1:11434"
-          OLLAMA_TIMEOUT_S: "300"
-          OLLAMA_MAX_RETRIES: "3"
-          ARTCLE_DETAIL_LINKS: "3"
-          RAG_MODEL: ${{ env.OLLAMA_CHAT_MODEL }}
-          AUDIT_MODEL: ${{ env.OLLAMA_CHAT_MODEL }}
-          DEBUG: "1"
+          OLLAMA_MODEL: ${{ env.OLLAMA_CHAT_MODEL }}
+          PROMPT_PATH: "scripts/prompt.txt"
+          REQUEST_TIMEOUT: "300"
+          MAX_RETRIES: "3"
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          OPENAI_IMAGE_MODEL: "gpt-image-1"
+          OPENAI_IMAGE_SIZE: "1024x1024"
           AVATAR_IMAGE: ${{ inputs.avatar_image }}
+          GITHUB_RUN_ID: ${{ github.run_id }}
         run: |
-          set +e
-          python scripts/generate_event_web_feed.py
-          status=$?
-          set -e
+          set -euo pipefail
 
-          if [ "$status" -eq 0 ]; then
-            echo "changed=1" >> "$GITHUB_OUTPUT"
-            exit 0
-          fi
+          mkdir -p frontend/app/public/image
 
-          if [ ! -f frontend/app/public/latest.json ]; then
-            echo "No publishable event payload was generated; skipping downstream publish."
+          python scripts/generate_sentence.py | tee /tmp/event_sentence_raw.txt
+          sentence="$(tail -n 1 /tmp/event_sentence_raw.txt | tr -d '\r')"
+
+          if [ -z "${sentence}" ]; then
+            echo "Generated sentence is empty" >&2
             echo "changed=0" >> "$GITHUB_OUTPUT"
             exit 0
           fi
 
-          echo "generate_event_web_feed.py failed with exit code $status even though latest.json exists" >&2
-          exit "$status"
+          image_rel="image/event-${GITHUB_RUN_ID}.png"
+          image_abs="frontend/app/public/${image_rel}"
+
+          python scripts/generate_illustration.py "${sentence}" "${image_abs}"
+
+          python - <<'PY'
+          import json
+          import os
+          from pathlib import Path
+
+          sentence = Path("/tmp/event_sentence_raw.txt").read_text(encoding="utf-8").splitlines()[-1].strip()
+          payload = {
+              "kind": "event",
+              "text": sentence,
+              "image": f"image/event-{os.environ['GITHUB_RUN_ID']}.png",
+              "avatar_image": os.environ.get("AVATAR_IMAGE", "image/avatar/event.png"),
+              "links": [],
+          }
+
+          Path("/tmp/event_entry.json").write_text(
+              json.dumps(payload, ensure_ascii=False),
+              encoding="utf-8",
+          )
+          PY
+
+          echo "changed=1" >> "$GITHUB_OUTPUT"
 
       - name: Export entry_json
         id: payload
@@ -162,12 +184,11 @@ jobs:
           import os
           from pathlib import Path
 
-          latest_path = Path("frontend/app/public/latest.json")
-          if not latest_path.exists():
-              raise SystemExit(f"latest feed JSON was not created: {latest_path}")
+          payload_path = Path("/tmp/event_entry.json")
+          if not payload_path.exists():
+              raise SystemExit(f"event entry JSON was not created: {payload_path}")
 
-          payload = json.loads(latest_path.read_text(encoding='utf-8'))
-
+          payload = json.loads(payload_path.read_text(encoding='utf-8'))
           compact = json.dumps(payload, ensure_ascii=False)
 
           with open(os.environ['GITHUB_OUTPUT'], 'a', encoding='utf-8') as f:
