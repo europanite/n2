@@ -57,6 +57,31 @@ jobs:
           GITHUB_RUN_ID: ${{ github.run_id }}
         run: |
           set -euo pipefail
+
+          echo "EVENT_NAME=${EVENT_NAME}"
+          echo "REQUESTED_SLOT=${REQUESTED_SLOT:-}"
+
+          if [ "${REQUESTED_SLOT:-}" = "event" ]; then
+            {
+              echo "should_run=true"
+              echo "slot=event"
+              echo "window_id=manual_event"
+              echo "reason=explicit_event_selected"
+            } >> "${GITHUB_OUTPUT}"
+            exit 0
+          fi
+
+          if [ ! -f scripts/feed_schedule_gate.py ]; then
+            echo "scripts/feed_schedule_gate.py is missing" >&2
+            {
+              echo "should_run=false"
+              echo "slot="
+              echo "window_id="
+              echo "reason=missing_feed_schedule_gate_py"
+            } >> "${GITHUB_OUTPUT}"
+            exit 0
+          fi
+
           set +e
           python scripts/feed_schedule_gate.py \
             --config .github/feed_schedule.json \
@@ -80,7 +105,7 @@ jobs:
               echo "reason=gate_failed_exit_${gate_rc}"
             } >> "${GITHUB_OUTPUT}"
           fi
-
+          
       - name: Log selection
         run: |
           echo "should_run=${{ steps.sel.outputs.should_run }}"
