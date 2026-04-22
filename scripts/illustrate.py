@@ -303,7 +303,7 @@ def main() -> int:
         image.save(out_path)
 
 
-    rel_image_url = resolve_public_image_url(f"image/{out_path.name}")
+    rel_image_url = resolve_public_image_url(out_path)
     now_iso = now_iso_utc()
 
     # Patch latest.json entry
