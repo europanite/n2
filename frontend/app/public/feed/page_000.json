@@ -127,10 +127,9 @@
     }
   ],
   "count": 10,
+  "page": 0,
   "page_size": 20,
+  "total_items": 10,
   "total_pages": 1,
-  "first_feed_url": "./feed/page_000.json",
-  "pages": [
-    "./feed/page_000.json"
-  ]
+  "next_feed_url": ""
 }
