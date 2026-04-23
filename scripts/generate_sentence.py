@@ -123,7 +123,6 @@ def is_valid_sentence(text: str) -> bool:
 
     return True
 
-
 def is_valid_study_point(text: str, study_point: str) -> bool:
     if not study_point:
         return False
@@ -140,27 +139,10 @@ def is_valid_study_point(text: str, study_point: str) -> bool:
     if any(fragment in study_point for fragment in banned_fragments):
         return False
 
-    if "『" not in study_point or "』" not in study_point:
-        return False
-
-    start = study_point.find("『")
-    end = study_point.find("』", start + 1)
-    if start == -1 or end == -1 or end <= start + 1:
-        return False
-
-    target = study_point[start + 1:end].strip()
-    if not target:
-        return False
-
-    if "〜" not in target and target not in text:
-        return False
-
-    ending_count = sum(study_point.count(mark) for mark in "。！？")
-    if ending_count != 1:
+    if not study_point.strip():
         return False
 
     return True
-
 
 def is_valid_translation_en(translation_en: str) -> bool:
     if not translation_en:
