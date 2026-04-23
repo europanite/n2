@@ -41,7 +41,4 @@ translation_en の条件:
 {"text":"例文: うんこが臭くて困る。","study_point":"...","translation_en":"..."}
 {"text":"うんこを放置してはいけない。","study_point":"放置してはいけないという意味である。","translation_en":"English: We must not leave poop there."}
 
-良い例:
-{"text":"うんこが落ちている以上、そのままにしておくわけにはいかない。","study_point":"『〜わけにはいかない』は、事情や常識のためにそうすることができないと述べる表現である。","translation_en":"As long as poop is lying there, we cannot just leave it as it is."}
-
 返すのは JSON オブジェクト1個だけです。
