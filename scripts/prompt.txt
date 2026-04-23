@@ -1,5 +1,3 @@
-# scripts/prompt.txt
-
 あなたの仕事は、日本語学習用の短い例文を1件だけ生成することです。
 
 必ず JSON オブジェクトを1つだけ返してください。
@@ -39,10 +37,9 @@ translation_en の条件:
 
 悪い例:
 {"text":"例文: うんこが臭くて困る。","study_point":"...","translation_en":"..."}
-{"text":"うんこを隠すことはngです。","study_point":"「〜はng」はN2表現である。","translation_en":"It is forbidden to hide poop."}
 {"text":"うんこを放置してはいけない。","study_point":"放置してはいけないという意味である。","translation_en":"English: We must not leave poop there."}
 
 良い例:
-{"text":"うんこが落ちている以上、そのままにしておくわけにはいかない。","study_point":"『〜わけにはいかない』は、事情や常識のためにそうすることができないと述べるN2レベルの表現である。","translation_en":"As long as poop is lying there, we cannot just leave it as it is."}
+{"text":"うんこが落ちている以上、そのままにしておくわけにはいかない。","study_point":"『〜わけにはいかない』は、事情や常識のためにそうすることができないと述べる表現である。","translation_en":"As long as poop is lying there, we cannot just leave it as it is."}
 
 返すのは JSON オブジェクト1個だけです。
