@@ -19,6 +19,7 @@ import argparse
 import json
 import os
 import random
+import re
 import shutil
 from dataclasses import dataclass
 from datetime import datetime, timezone
@@ -110,6 +111,31 @@ def _render(t: str, *, place: str, text: str) -> str:
     return s.replace("{place}", p).replace("{text}", text)
 
 
+def _first_nonempty_line(text: str) -> str:
+    for line in str(text or "").splitlines():
+        s = line.strip()
+        if s:
+            return s
+    return ""
+
+
+def extract_scene_text(text: str) -> str:
+    """
+    Convert the stored feed text into the single sentence that should be drawn.
+
+    The current pipeline stores a multi-line block such as:
+      うんこがきれいに見える。
+      学習ポイント: ...
+      英訳: ...
+
+    Only the first sentence should drive the illustration.
+    """
+    scene = _first_nonempty_line(text)
+    scene = re.sub(r"^(例文|本文|文)\s*[:：]\s*", "", scene)
+    scene = re.sub(r"\s+", " ", scene).strip()
+    return scene
+
+
 def newest_feed_snapshot(feed_dir: Path) -> Optional[Path]:
     candidates = sorted(
         feed_dir.glob("feed_*.json"),
@@ -179,19 +205,35 @@ def resolve_latest_entry(latest_path: Path) -> tuple[dict[str, Any], Path]:
     return entry, snap
 
 def build_prompt(text: str, place: str) -> tuple[str, str]:
+    scene_text = extract_scene_text(text)
     raw_text = " ".join((text or "").split()).strip()
     p = (place or "").strip()
+
+    if not scene_text:
+        raise SystemExit("ERROR: illustration scene text is empty")
+
     if PROMPT_TMPL:
-        prompt = _render(PROMPT_TMPL, place=p, text=raw_text)
+        prompt = _render(PROMPT_TMPL, place=p, text=scene_text)
     else:
         prompt = (
-            "Create a clean, friendly illustration that matches this Japanese sentence exactly. "
-            "Do not add any letters, captions, speech bubbles, watermark, or logo. "
-            "Use a simple composition and make the scene directly reflect the sentence. "
-            f"Japanese sentence: {raw_text}"
+            "Draw exactly the situation described by the Japanese sentence below. "
+            "Use the sentence itself as the source of truth for who appears, what they do, "
+            "what object is important, and what kind of scene it is. "
+            "Do not use the study point, translation, or any extra explanation as image content. "
+            "Do not add unrelated people, food, animals, buildings, decorations, letters, captions, "
+            "speech bubbles, watermark, or logo. "
+            "Keep the composition simple and make one still image that directly visualizes the sentence. "
+            f"Japanese sentence: {scene_text}"
         )
         if p:
             prompt += f" Place: {p}"
+
+    if raw_text and raw_text != scene_text:
+        prompt += (
+            " Ignore these extra feed fields if they are present after the sentence: "
+            "study notes, learning points, translations, labels, metadata."
+        )
+
     negative = _render(NEGATIVE_TMPL, place=p, text=raw_text) if NEGATIVE_TMPL else ""
     return prompt, negative
 
@@ -367,13 +409,15 @@ def main() -> int:
 
         seed = int(SEED_OVERRIDE) if SEED_OVERRIDE.isdigit() else random.randint(0, 2**31 - 1)
         seed += SEED_OFFSET
-        prompt,negative = build_prompt(text, place)
+        scene_text = extract_scene_text(text)
+        prompt, negative = build_prompt(text, place)
 
         print(f"MODEL_ID={MODEL_ID}")
         print("mode=text2img")
         print(f"seed={seed}")
         print(f"feed_stem={feed_stem}")
         print(f"out_path={out_path}")
+        print(f"scene_text={scene_text}")
         print(f"prompt={prompt}")
         print(f"negative={negative}")
 
