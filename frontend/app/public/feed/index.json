@@ -1,6 +1,18 @@
 {
   "items": [
     {
+      "id": "feed_20260423_213309",
+      "kind": "event",
+      "date": "2026-04-23",
+      "created_at": "2026-04-23T12:33:09Z",
+      "text": "うんこがきれいに掃除できる。\n\n\n学習ポイント: 「うんこ」は、体の中で生成される排泄物の代名詞です。\n\n\n英訳: Poop can clean itself.",
+      "tweet": "うんこがきれいに掃除できる。\n\n\n学習ポイント: 「うんこ」は、体の中で生成される排泄物の代名詞です。\n\n\n英訳: Poop can clean itself.",
+      "place": "",
+      "links": [],
+      "avatar_image": "image/avatar/normal.png",
+      "permalink": "./posts/feed_20260423_213309/index.html"
+    },
+    {
       "id": "feed_20260423_211240",
       "kind": "event",
       "date": "2026-04-23",
@@ -511,7 +523,7 @@
       "permalink": "./posts/feed_20260422_183019/index.html"
     }
   ],
-  "count": 31,
+  "count": 32,
   "page_size": 20,
   "total_pages": 2,
   "first_feed_url": "./feed/page_000.json",
