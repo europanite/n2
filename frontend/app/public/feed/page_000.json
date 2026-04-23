@@ -1,6 +1,18 @@
 {
   "items": [
     {
+      "id": "feed_20260424_022159",
+      "kind": "event",
+      "date": "2026-04-24",
+      "created_at": "2026-04-23T17:21:59Z",
+      "text": "うんこを食べたら体調が悪くなる。\n\n\n学習ポイント: 「うんこ」を使って、不適切な行為について警告を与える表現である。\n\n\n英訳: Eating poop can make you sick.",
+      "tweet": "うんこを食べたら体調が悪くなる。\n\n\n学習ポイント: 「うんこ」を使って、不適切な行為について警告を与える表現である。\n\n\n英訳: Eating poop can make you sick.",
+      "place": "",
+      "links": [],
+      "avatar_image": "image/avatar/normal.png",
+      "permalink": "./posts/feed_20260424_022159/index.html"
+    },
+    {
       "id": "feed_20260423_222938",
       "kind": "event",
       "date": "2026-04-23",
@@ -368,32 +380,12 @@
       "image_negative": "photorealistic, text, watermark, logo, low quality, blurry, underexposed, too dark",
       "image_model": "stabilityai/sdxl-turbo",
       "image_generated_at": "2026-04-23T00:18:53Z"
-    },
-    {
-      "id": "feed_20260423_021357",
-      "kind": "event",
-      "date": "2026-04-23",
-      "created_at": "2026-04-22T17:13:57Z",
-      "text": "うんこのことを思い出しながら会議が進んでいった。",
-      "tweet": "うんこのことを思い出しながら会議が進んでいった。",
-      "place": "",
-      "links": [],
-      "avatar_image": "image/avatar/normal.png",
-      "permalink": "./posts/feed_20260423_021357/index.html",
-      "legacy_id": "fixed-event-20260423_021357",
-      "image": "image/feed_20260423_021357.png",
-      "image_url": "image/feed_20260423_021357.png",
-      "avatar_url": "image/avatar/normal.png",
-      "image_prompt": "illustration, clear composition, soft lighting, suitable for an event post, scene in Yokosuka, Japan. Inspired by: うんこのことを思い出しながら会議が進んでいった。",
-      "image_negative": "photorealistic, text, watermark, logo, low quality, blurry, underexposed, too dark",
-      "image_model": "stabilityai/sdxl-turbo",
-      "image_generated_at": "2026-04-22T17:18:26Z"
     }
   ],
   "count": 20,
   "page": 0,
   "page_size": 20,
-  "total_items": 34,
+  "total_items": 35,
   "total_pages": 2,
   "next_feed_url": "./feed/page_001.json"
 }

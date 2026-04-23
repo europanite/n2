@@ -1,6 +1,18 @@
 {
   "items": [
     {
+      "id": "feed_20260424_022159",
+      "kind": "event",
+      "date": "2026-04-24",
+      "created_at": "2026-04-23T17:21:59Z",
+      "text": "うんこを食べたら体調が悪くなる。\n\n\n学習ポイント: 「うんこ」を使って、不適切な行為について警告を与える表現である。\n\n\n英訳: Eating poop can make you sick.",
+      "tweet": "うんこを食べたら体調が悪くなる。\n\n\n学習ポイント: 「うんこ」を使って、不適切な行為について警告を与える表現である。\n\n\n英訳: Eating poop can make you sick.",
+      "place": "",
+      "links": [],
+      "avatar_image": "image/avatar/normal.png",
+      "permalink": "./posts/feed_20260424_022159/index.html"
+    },
+    {
       "id": "feed_20260423_222938",
       "kind": "event",
       "date": "2026-04-23",
@@ -571,7 +583,7 @@
       "permalink": "./posts/feed_20260422_183019/index.html"
     }
   ],
-  "count": 34,
+  "count": 35,
   "page_size": 20,
   "total_pages": 2,
   "first_feed_url": "./feed/page_000.json",
