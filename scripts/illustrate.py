@@ -15,6 +15,7 @@ Supports BOTH latest.json shapes:
 
 from __future__ import annotations
 
+import argparse
 import json
 import os
 import random
@@ -38,6 +39,12 @@ GUIDANCE_SCALE = float(os.environ.get("GUIDANCE_SCALE", "2.0"))
 SEED_OVERRIDE = (os.environ.get("SEED") or "").strip()
 SEED_OFFSET = int(os.environ.get("SEED_OFFSET", "0"))
 DEVICE = "cpu"  # GitHub Actions runner is typically CPU for this job
+
+
+def parse_args() -> argparse.Namespace:
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--text", default="", help="Direct Japanese text for image generation")
+    return parser.parse_args()
 
 
 
@@ -95,12 +102,12 @@ def now_iso_utc() -> str:
 def safe_str(x: Any) -> str:
     return str(x) if x is not None else ""
 
-def _render(t: str, *, place: str, core: str) -> str:
+def _render(t: str, *, place: str, text: str) -> str:
     s = (t or "").strip()
     if not s:
         return ""
     p = place or "Yokosuka, Japan"
-    return s.replace("{place}", p).replace("{core}", core)
+    return s.replace("{place}", p).replace("{text}", text)
 
 
 def newest_feed_snapshot(feed_dir: Path) -> Optional[Path]:
@@ -172,13 +179,20 @@ def resolve_latest_entry(latest_path: Path) -> tuple[dict[str, Any], Path]:
     return entry, snap
 
 def build_prompt(text: str, place: str) -> tuple[str, str]:
-    core = " ".join((text or "").split()).strip()[:240]
+    raw_text = " ".join((text or "").split()).strip()
     p = (place or "").strip()
     if PROMPT_TMPL:
-        prompt = _render(PROMPT_TMPL, place=p, core=core)
+        prompt = _render(PROMPT_TMPL, place=p, text=raw_text)
     else:
-        prompt = f"cinematic illustration, {p}, based on this short story: {core}" if p else f"cinematic illustration, based on this short story: {core}"
-    negative = _render(NEGATIVE_TMPL, place=p, core=core) if NEGATIVE_TMPL else ""
+        prompt = (
+            "Create a clean, friendly illustration that matches this Japanese sentence exactly. "
+            "Do not add any letters, captions, speech bubbles, watermark, or logo. "
+            "Use a simple composition and make the scene directly reflect the sentence. "
+            f"Japanese sentence: {raw_text}"
+        )
+        if p:
+            prompt += f" Place: {p}"
+    negative = _render(NEGATIVE_TMPL, place=p, text=raw_text) if NEGATIVE_TMPL else ""
     return prompt, negative
 
 def _match_item(item: dict, *, date: str, text: str, generated_at: str) -> bool:
@@ -298,6 +312,8 @@ def resolve_fixed_image_path(value: str, public_dir: Path) -> Path:
     raise FileNotFoundError(f"fixed image not found. tried: {msg}")
 
 def main() -> int:
+    args = parse_args()
+
     public_dir = artifact_public_dir()
     latest_path = artifact_latest_path(public_dir)
 
@@ -308,7 +324,8 @@ def main() -> int:
     entry, feed_path = resolve_latest_entry(latest_path)
 
     date = safe_str(entry.get("date")).strip()
-    text = safe_str(entry.get("text") or entry.get("tweet")).strip()
+    entry_text = safe_str(entry.get("text") or entry.get("tweet")).strip()
+    text = (args.text or "").strip() or entry_text
     place = safe_str(entry.get("place")).strip()
     generated_at = safe_str(
         entry.get("created_at") or entry.get("generated_at") or entry.get("published_at")

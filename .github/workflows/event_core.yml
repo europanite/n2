@@ -269,7 +269,6 @@ jobs:
       MIRROR_AUG: "0"
       STEPS: "6"
       GUIDANCE_SCALE: "2.0"
-      PROMPT: "illustration, clear composition, soft lighting, suitable for an event post, scene in {place}. Inspired by: {core}"
       NEGATIVE: "photorealistic, text, watermark, logo, low quality, blurry, underexposed, too dark"
 
     outputs:
@@ -304,9 +303,26 @@ jobs:
           mkdir -p frontend/app/public
           tar -C frontend/app/public -xzf /tmp/fixed-entry-state/fixed-entry-state.tgz
 
+      - name: Extract illustration text from latest entry
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json
+          from pathlib import Path
+
+          latest = json.loads(Path("frontend/app/public/latest.json").read_text(encoding="utf-8"))
+          text = str(latest.get("text", "") or latest.get("tweet", "")).strip()
+          if not text:
+              raise SystemExit("latest.json text is empty")
+
+          Path("/tmp/illustration_text.txt").write_text(text, encoding="utf-8")
+          PY
+
       - name: Create compose env file for illustrate
         run: |
-          cat > /tmp/event-compose.env <<'EOF'
+          set -euo pipefail
+          {
+            cat <<'EOF'
           BACKEND_PORT=8000
           AUTH_SECRET=
           AUTH_EXPIRE_MINUTES=60
@@ -369,6 +385,8 @@ jobs:
           EXPO_PUBLIC_SHARE_SD_INDEX_URL=
           EXPO_PUBLIC_FEEDBACK_FORM_URL=
           EOF
+            printf 'ILLUSTRATION_TEXT=%s\n' "$(cat /tmp/illustration_text.txt)"
+          } > /tmp/event-compose.env
 
       - name: Build illustrate image
         env:
