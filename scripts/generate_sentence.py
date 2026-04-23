@@ -1,3 +1,5 @@
+# scripts/generate_sentence.py
+
 from __future__ import annotations
 
 import json
@@ -62,6 +64,8 @@ def is_valid_sentence(text: str) -> bool:
         return False
     if len(text) < 12:
         return False
+    if "\n" in text or "\r" in text:
+        return False
 
     forbidden_prefixes = (
         "例文",
@@ -73,20 +77,82 @@ def is_valid_sentence(text: str) -> bool:
     if text.startswith(forbidden_prefixes):
         return False
 
-    sentence_endings = "。！？"
-    ending_count = sum(text.count(mark) for mark in sentence_endings)
-    if ending_count == 0:
-        return False
-    if ending_count > 1:
-        return False
-
     banned_fragments = (
+        "学習ポイント",
+        "英訳",
+        "translation",
+        "Translation",
+        "English:",
+        "英語:",
         "箇条書き",
         "説明します",
         "次の文",
         "この例文",
     )
     if any(fragment in text for fragment in banned_fragments):
+        return False
+
+    sentence_endings = "。！？"
+    ending_count = sum(text.count(mark) for mark in sentence_endings)
+    if ending_count != 1:
+        return False
+
+    return True
+
+
+def is_valid_study_point(text: str, study_point: str) -> bool:
+    if not study_point:
+        return False
+    if "\n" in study_point or "\r" in study_point:
+        return False
+
+    banned_fragments = (
+        "学習ポイント",
+        "Study Point",
+        "ポイント:",
+        "英訳",
+        "translation",
+    )
+    if any(fragment in study_point for fragment in banned_fragments):
+        return False
+
+    if "『" not in study_point or "』" not in study_point:
+        return False
+
+    start = study_point.find("『")
+    end = study_point.find("』", start + 1)
+    if start == -1 or end == -1 or end <= start + 1:
+        return False
+
+    target = study_point[start + 1:end].strip()
+    if not target:
+        return False
+
+    if "〜" not in target and target not in text:
+        return False
+
+    ending_count = sum(study_point.count(mark) for mark in "。！？")
+    if ending_count != 1:
+        return False
+
+    return True
+
+
+def is_valid_translation_en(translation_en: str) -> bool:
+    if not translation_en:
+        return False
+    if "\n" in translation_en or "\r" in translation_en:
+        return False
+
+    banned_fragments = (
+        "英訳:",
+        "English:",
+        "Translation:",
+        "translation:",
+        "This sentence means",
+        "学習ポイント",
+    )
+    if any(fragment in translation_en for fragment in banned_fragments):
         return False
 
     return True
@@ -103,6 +169,11 @@ def extract_json_payload(raw: str) -> dict[str, str]:
     if not isinstance(data, dict):
         raise ValueError("output JSON must be an object")
 
+    expected_keys = {"text", "study_point", "translation_en"}
+    actual_keys = set(data.keys())
+    if actual_keys != expected_keys:
+        raise ValueError(f"output keys must be exactly {sorted(expected_keys)}")
+
     text = str(data.get("text", "")).strip()
     study_point = str(data.get("study_point", "")).strip()
     translation_en = str(data.get("translation_en", "")).strip()
@@ -110,11 +181,11 @@ def extract_json_payload(raw: str) -> dict[str, str]:
     if not is_valid_sentence(text):
         raise ValueError(f"invalid text field: {text}")
 
-    if not study_point:
-        raise ValueError("study_point is empty")
+    if not is_valid_study_point(text, study_point):
+        raise ValueError(f"invalid study_point field: {study_point}")
 
-    if not translation_en:
-        raise ValueError("translation_en is empty")
+    if not is_valid_translation_en(translation_en):
+        raise ValueError(f"invalid translation_en field: {translation_en}")
 
     return {
         "text": text,
