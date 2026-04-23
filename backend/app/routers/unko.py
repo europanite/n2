@@ -73,7 +73,7 @@ def unko_health() -> dict[str, str]:
 @router.post("/generate", response_model=UnkoGenerateResponse)
 def generate_unko(payload: UnkoGenerateRequest) -> UnkoGenerateResponse:
     base_url = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434")
-    model = os.getenv("RAG_MODEL", "llama3.1:8b")
+    model = os.getenv("RAG_MODEL", "qwen3:8b")
     timeout_s = int(os.getenv("OLLAMA_TIMEOUT_S", "120"))
     prompt = _load_prompt(payload.topic)
 

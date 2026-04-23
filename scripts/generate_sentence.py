@@ -42,7 +42,7 @@ def load_settings() -> dict[str, str | int]:
     load_dotenv(PROJECT_ROOT / ".env")
     return {
         "ollama_base_url": os.getenv("OLLAMA_BASE_URL", "http://localhost:11434"),
-        "ollama_model": os.getenv("OLLAMA_MODEL", "llama3.1:8b"),
+        "ollama_model": os.getenv("OLLAMA_MODEL", "qwen3:8b"),
         "prompt_path": os.getenv("PROMPT_PATH", str(DEFAULT_PROMPT_PATH)),
         "max_retries": int(os.getenv("MAX_RETRIES", "3")),
         "request_timeout": int(os.getenv("REQUEST_TIMEOUT", "120")),

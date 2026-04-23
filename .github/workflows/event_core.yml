@@ -233,8 +233,8 @@ jobs:
       LLM_PROVIDER: "ollama"
       EMBEDDING_PROVIDER: "ollama"
       OLLAMA_BASE_URL: "http://ollama:11434"
-      RAG_MODEL: "llama3.1:8b"
-      AUDIT_MODEL: "llama3.1:8b"
+      RAG_MODEL: "qwen3:8b"
+      AUDIT_MODEL: "qwen3:8b"
       EMBEDDING_MODEL: "mxbai-embed-large"
 
       RAG_CHUNK_SIZE: "128"
@@ -340,8 +340,8 @@ jobs:
           LLM_PROVIDER=ollama
           EMBEDDING_PROVIDER=ollama
           OLLAMA_BASE_URL=http://ollama:11434
-          RAG_MODEL=llama3.1:8b
-          AUDIT_MODEL=llama3.1:8b
+          RAG_MODEL=qwen3:8b
+          AUDIT_MODEL=qwen3:8b
           EMBEDDING_MODEL=mxbai-embed-large
 
           RAG_CHUNK_SIZE=128
