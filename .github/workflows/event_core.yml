@@ -310,10 +310,23 @@ jobs:
           import json
           from pathlib import Path
 
-          latest = json.loads(Path("frontend/app/public/latest.json").read_text(encoding="utf-8"))
+          public_dir = Path("frontend/app/public")
+          latest = json.loads((public_dir / "latest.json").read_text(encoding="utf-8"))
+
           text = str(latest.get("text", "") or latest.get("tweet", "")).strip()
           if not text:
-              raise SystemExit("latest.json text is empty")
+              feed_url = str(latest.get("feed_url", "")).strip()
+              if not feed_url:
+                  raise SystemExit("latest.json has neither text/tweet nor feed_url")
+              page_path = public_dir / feed_url.lstrip("./")
+              page = json.loads(page_path.read_text(encoding="utf-8"))
+              items = page.get("items") or []
+              if not items or not isinstance(items[0], dict):
+                  raise SystemExit("feed page has no items")
+              text = str(items[0].get("text", "") or items[0].get("tweet", "")).strip()
+
+          if not text:
+              raise SystemExit("latest entry text is empty")
 
           Path("/tmp/illustration_text.txt").write_text(text, encoding="utf-8")
           PY
