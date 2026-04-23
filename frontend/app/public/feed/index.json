@@ -1,6 +1,18 @@
 {
   "items": [
     {
+      "id": "feed_20260423_222938",
+      "kind": "event",
+      "date": "2026-04-23",
+      "created_at": "2026-04-23T13:29:38Z",
+      "text": "うんこをすすぐと舅が言ったら驚いた。\n\n\n学習ポイント: 「と」：述語と受身の主語を区別するために使われる助詞。例文では、うしろの動詞の完了形に使われている。\n\n\n英訳: When Uncle said to wash his poop, he was surprised.",
+      "tweet": "うんこをすすぐと舅が言ったら驚いた。\n\n\n学習ポイント: 「と」：述語と受身の主語を区別するために使われる助詞。例文では、うしろの動詞の完了形に使われている。\n\n\n英訳: When Uncle said to wash his poop, he was surprised.",
+      "place": "",
+      "links": [],
+      "avatar_image": "image/avatar/normal.png",
+      "permalink": "./posts/feed_20260423_222938/index.html"
+    },
+    {
       "id": "feed_20260423_220809",
       "kind": "event",
       "date": "2026-04-23",
@@ -551,7 +563,7 @@
       "permalink": "./posts/feed_20260422_183019/index.html"
     }
   ],
-  "count": 33,
+  "count": 34,
   "page_size": 20,
   "total_pages": 2,
   "first_feed_url": "./feed/page_000.json",
