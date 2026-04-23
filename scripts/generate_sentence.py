@@ -187,8 +187,16 @@ def extract_json_payload(raw: str) -> dict[str, str]:
     if not is_valid_translation_en(translation_en):
         raise ValueError(f"invalid translation_en field: {translation_en}")
 
+    combined_text = "\n".join(
+        [
+            text,
+            f"学習ポイント: {study_point}",
+            f"英訳: {translation_en}",
+        ]
+    )
+
     return {
-        "text": text,
+        "text": combined_text,
         "study_point": study_point,
         "translation_en": translation_en,
     }

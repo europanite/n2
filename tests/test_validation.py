@@ -40,7 +40,11 @@ def test_extract_json_payload_accepts_full_contract() -> None:
     )
     payload = extract_json_payload(raw)
 
-    assert payload["text"] == "うんこが落ちている以上、そのままにしておくわけにはいかない。"
+    assert payload["text"] == (
+        "うんこが落ちている以上、そのままにしておくわけにはいかない。\n"
+        "学習ポイント: 『〜わけにはいかない』は、事情や常識のためにそうすることができないと述べるN2レベルの表現である。\n"
+        "英訳: As long as poop is lying there, we cannot just leave it as it is."
+    )
     assert "『〜わけにはいかない』" in payload["study_point"]
     assert payload["translation_en"] == "As long as poop is lying there, we cannot just leave it as it is."
 
