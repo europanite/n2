@@ -1429,7 +1429,8 @@ function GuideSidebar({
 }
 
 function Slot({ side }: { side: "left" | "right" }) {
-  const enabled = process.env.EXPO_PUBLIC_USE_SLOT === "1";
+  // Default to visible. Set EXPO_PUBLIC_USE_SLOT=0 only when ad slots must be hidden.
+  const enabled = process.env.EXPO_PUBLIC_USE_SLOT !== "0";
   if (!enabled) return null;
 
   const banners = SLOT_BANNERS;
@@ -1897,65 +1898,12 @@ const getImageUrisForItem = useCallback(
             }
       renderItem={({ item }) => {
         if (isSlotItem(item)) {
-          const banner = pickInlineGuideBanner(guideBanners, item.id);
-
-          if (banner) {
-            return (
-              <View style={{ paddingHorizontal: 16, paddingBottom: 12 }}>
-                <View style={{ flexDirection: "row", alignItems: "flex-start" }}>
-                  {/* keep alignment with the mascot column */}
-                  <View style={{ flex: 1 }}>
-                    <InlineGuideCard banner={banner} onPress={() => openResolvedUrl(banner.url)} />
-                  </View>
-                </View>
-              </View>
-            );
-          }
-
-          const open = () => {
-            if (!item.url) return;
-            openResolvedUrl(item.url);
-          };
+          const startIndex = SLOT_BANNERS.length ? hashString(item.id) % SLOT_BANNERS.length : 0;
 
           return (
-            <Pressable onPress={open}>
-              <View 
-                style={{ 
-                  paddingHorizontal: 16, 
-                  paddingBottom: 12 
-                  }}>
-                <View style={{ flexDirection: "row", alignItems: "flex-start" }}>
-                  <View style={{ flex: 1 }}>
-                    {/* Speech-bubble wrapper */}
-                    <View style={{ position: "relative", marginTop: 2 }}>
-                      {/* ✅ 1) Bubble body FIRST */}
-                      <View
-                        style={{
-                          backgroundColor: ITEM_BG,
-                          padding: 12,
-                          borderRadius: BUBBLE_RADIUS,
-                          borderWidth: BUBBLE_BORDER_W,
-                          borderColor: BORDER,
-                          minHeight: MASCOT_SIZE,
-                          shadowColor: "#000000",
-                          shadowOffset: { width: 0, height: 2 },
-                          shadowOpacity: 0.12,
-                          shadowRadius: 6,
-                          elevation: 2,
-                          zIndex: 1,
-                        }}
-                      >
-                        <View style={{ flexDirection: "row", flexWrap: "wrap", alignItems: "center", gap: 8 }}>
-                          <Text style={{ color: "#000000", fontWeight: "800" }}>{item.title}</Text>
-                          {item.sponsor ? <Text style={{ color: TEXT_DIM }}>• {item.sponsor}</Text> : null}
-                        </View>
-                        <Text style={{ color: "#000000", marginTop: 8, fontSize: 16, lineHeight: 22 }}>{item.body}</Text>
-                      </View>
-                    </View>
-                  </View>
-                </View>
-              </View>
-            </Pressable>
+            <View style={{ paddingHorizontal: 16, paddingBottom: 12 }}>
+              <SlotCard banners={SLOT_BANNERS} startIndex={startIndex} variant="inline" />
+            </View>
           );
         }
 
@@ -2059,14 +2007,9 @@ const getImageUrisForItem = useCallback(
         alignItems: "stretch",
       }}
     >
-      {/* Left sidebar: rotating guide card */}
+      {/* Left sidebar: rotating demo ad card */}
       <View style={{ flex: 1, minWidth: SIDEBAR_W, minHeight: 0 }}>
-        <GuideSidebar
-          banners={guideBanners}
-          active={leftGuideActiveIndex}
-          next={leftGuideNextIndex}
-          progress={guideProgress}
-        />
+        <Slot side="left" />
       </View>
 
       {/* Center: keep 760 as the “target” width, but allow shrinking */}
@@ -2074,14 +2017,9 @@ const getImageUrisForItem = useCallback(
         {list}
       </View>
 
-      {/* Right sidebar: rotating guide card, always offset from left */}
+      {/* Right sidebar: rotating demo ad card, offset from left */}
       <View style={{ flex: 1, minWidth: SIDEBAR_W, minHeight: 0 }}>
-        <GuideSidebar
-          banners={guideBanners}
-          active={rightGuideActiveIndex}
-          next={rightGuideNextIndex}
-          progress={guideProgress}
-        />
+        <Slot side="right" />
       </View>
     </View>
   );

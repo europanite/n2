@@ -15,7 +15,6 @@ Supports BOTH latest.json shapes:
 
 from __future__ import annotations
 
-import argparse
 import json
 import os
 import random
@@ -33,19 +32,13 @@ from diffusers import AutoPipelineForText2Image
 MODEL_ID = os.environ.get("SDXL_MODEL_ID", "stabilityai/sdxl-turbo").strip()
 LORA_PATH = os.environ.get("LORA_PATH", "").strip()
 LORA_SCALE = float(os.environ.get("LORA_SCALE", "0.8"))
-PROMPT_TMPL = (os.environ.get("PROMPT") or "").strip()
-NEGATIVE_TMPL = (os.environ.get("NEGATIVE") or "").strip()
+PROMPT_TMPL = (os.environ.get("PROMPT"))
+NEGATIVE_TMPL = (os.environ.get("NEGATIVE"))
 STEPS = int(os.environ.get("STEPS", "6"))
 GUIDANCE_SCALE = float(os.environ.get("GUIDANCE_SCALE", "2.0"))
-SEED_OVERRIDE = (os.environ.get("SEED") or "").strip()
+SEED_OVERRIDE = (os.environ.get("SEED"))
 SEED_OFFSET = int(os.environ.get("SEED_OFFSET", "0"))
 DEVICE = "cpu"  # GitHub Actions runner is typically CPU for this job
-
-
-def parse_args() -> argparse.Namespace:
-    parser = argparse.ArgumentParser()
-    parser.add_argument("--text", default="", help="Direct Japanese text for image generation")
-    return parser.parse_args()
 
 
 
@@ -103,13 +96,12 @@ def now_iso_utc() -> str:
 def safe_str(x: Any) -> str:
     return str(x) if x is not None else ""
 
-def _render(t: str, *, place: str, text: str) -> str:
+def _render(t: str, *, place: str, core: str) -> str:
     s = (t or "").strip()
     if not s:
         return ""
     p = place or "Yokosuka, Japan"
-    return s.replace("{place}", p).replace("{text}", text)
-
+    return s.replace("{place}", p).replace("{core}", core)
 
 def _first_nonempty_line(text: str) -> str:
     for line in str(text or "").splitlines():
@@ -134,7 +126,6 @@ def extract_scene_text(text: str) -> str:
     scene = re.sub(r"^(例文|本文|文)\s*[:：]\s*", "", scene)
     scene = re.sub(r"\s+", " ", scene).strip()
     return scene
-
 
 def newest_feed_snapshot(feed_dir: Path) -> Optional[Path]:
     candidates = sorted(
@@ -205,36 +196,13 @@ def resolve_latest_entry(latest_path: Path) -> tuple[dict[str, Any], Path]:
     return entry, snap
 
 def build_prompt(text: str, place: str) -> tuple[str, str]:
-    scene_text = extract_scene_text(text)
-    raw_text = " ".join((text or "").split()).strip()
+    core = " ".join((text or "").split()).strip()[:240]
     p = (place or "").strip()
-
-    if not scene_text:
-        raise SystemExit("ERROR: illustration scene text is empty")
-
     if PROMPT_TMPL:
-        prompt = _render(PROMPT_TMPL, place=p, text=scene_text)
+        prompt = _render(PROMPT_TMPL, place=p, core=core)
     else:
-        prompt = (
-            "Draw exactly the situation described by the Japanese sentence below. "
-            "Use the sentence itself as the source of truth for who appears, what they do, "
-            "what object is important, and what kind of scene it is. "
-            "Do not use the study point, translation, or any extra explanation as image content. "
-            "Do not add unrelated people, food, animals, buildings, decorations, letters, captions, "
-            "speech bubbles, watermark, or logo. "
-            "Keep the composition simple and make one still image that directly visualizes the sentence. "
-            f"Japanese sentence: {scene_text}"
-        )
-        if p:
-            prompt += f" Place: {p}"
-
-    if raw_text and raw_text != scene_text:
-        prompt += (
-            " Ignore these extra feed fields if they are present after the sentence: "
-            "study notes, learning points, translations, labels, metadata."
-        )
-
-    negative = _render(NEGATIVE_TMPL, place=p, text=raw_text) if NEGATIVE_TMPL else ""
+        prompt = f"cinematic illustration, {p}, based on this short story: {core}" if p else f"cinematic illustration, based on this short story: {core}"
+    negative = _render(NEGATIVE_TMPL, place=p, core=core) if NEGATIVE_TMPL else ""
     return prompt, negative
 
 def _match_item(item: dict, *, date: str, text: str, generated_at: str) -> bool:
@@ -354,8 +322,6 @@ def resolve_fixed_image_path(value: str, public_dir: Path) -> Path:
     raise FileNotFoundError(f"fixed image not found. tried: {msg}")
 
 def main() -> int:
-    args = parse_args()
-
     public_dir = artifact_public_dir()
     latest_path = artifact_latest_path(public_dir)
 
@@ -366,8 +332,7 @@ def main() -> int:
     entry, feed_path = resolve_latest_entry(latest_path)
 
     date = safe_str(entry.get("date")).strip()
-    entry_text = safe_str(entry.get("text") or entry.get("tweet")).strip()
-    text = (args.text or "").strip() or entry_text
+    text = safe_str(entry.get("text") or entry.get("tweet")).strip()
     place = safe_str(entry.get("place")).strip()
     generated_at = safe_str(
         entry.get("created_at") or entry.get("generated_at") or entry.get("published_at")
@@ -409,15 +374,13 @@ def main() -> int:
 
         seed = int(SEED_OVERRIDE) if SEED_OVERRIDE.isdigit() else random.randint(0, 2**31 - 1)
         seed += SEED_OFFSET
-        scene_text = extract_scene_text(text)
-        prompt, negative = build_prompt(text, place)
+        prompt,negative = build_prompt(text, place)
 
         print(f"MODEL_ID={MODEL_ID}")
         print("mode=text2img")
         print(f"seed={seed}")
         print(f"feed_stem={feed_stem}")
         print(f"out_path={out_path}")
-        print(f"scene_text={scene_text}")
         print(f"prompt={prompt}")
         print(f"negative={negative}")
 
