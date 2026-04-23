@@ -1,6 +1,18 @@
 {
   "items": [
     {
+      "id": "feed_20260424_074501",
+      "kind": "event",
+      "date": "2026-04-24",
+      "created_at": "2026-04-23T22:45:01Z",
+      "text": "うんこが汚いから、手を洗ってください。\n\n\n学習ポイント: 文末記号の使用。本文では、文章の終わりに '?' を使用しています。\n\n\n英訳: Use of punctuation at the end of a sentence.",
+      "tweet": "うんこが汚いから、手を洗ってください。\n\n\n学習ポイント: 文末記号の使用。本文では、文章の終わりに '?' を使用しています。\n\n\n英訳: Use of punctuation at the end of a sentence.",
+      "place": "",
+      "links": [],
+      "avatar_image": "image/avatar/normal.png",
+      "permalink": "./posts/feed_20260424_074501/index.html"
+    },
+    {
       "id": "feed_20260424_064638",
       "kind": "event",
       "date": "2026-04-24",
@@ -368,32 +380,12 @@
       "image_negative": "photorealistic, text, watermark, logo, low quality, blurry, underexposed, too dark",
       "image_model": "stabilityai/sdxl-turbo",
       "image_generated_at": "2026-04-23T05:00:51Z"
-    },
-    {
-      "id": "feed_20260423_124734",
-      "kind": "event",
-      "date": "2026-04-23",
-      "created_at": "2026-04-23T03:47:34Z",
-      "text": "うんこを掃除する必要があるかどうか迷う。",
-      "tweet": "うんこを掃除する必要があるかどうか迷う。",
-      "place": "",
-      "links": [],
-      "avatar_image": "image/avatar/normal.png",
-      "permalink": "./posts/feed_20260423_124734/index.html",
-      "legacy_id": "fixed-event-20260423_124734",
-      "image": "image/feed_20260423_124734.png",
-      "image_url": "image/feed_20260423_124734.png",
-      "avatar_url": "image/avatar/normal.png",
-      "image_prompt": "illustration, clear composition, soft lighting, suitable for an event post, scene in Yokosuka, Japan. Inspired by: うんこを掃除する必要があるかどうか迷う。",
-      "image_negative": "photorealistic, text, watermark, logo, low quality, blurry, underexposed, too dark",
-      "image_model": "stabilityai/sdxl-turbo",
-      "image_generated_at": "2026-04-23T03:51:11Z"
     }
   ],
   "count": 20,
   "page": 0,
   "page_size": 20,
-  "total_items": 38,
+  "total_items": 39,
   "total_pages": 2,
   "next_feed_url": "./feed/page_001.json"
 }
