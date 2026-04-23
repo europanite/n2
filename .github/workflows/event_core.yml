@@ -127,6 +127,7 @@ jobs:
           REQUEST_TIMEOUT: "300"
           MAX_RETRIES: "3"
           AVATAR_IMAGE: ${{ inputs.avatar_image }}
+          PROMPT_SEED: "${{ github.run_id }}-${{ github.run_number }}-${{ github.job }}"
         run: |
           set -euo pipefail
 

@@ -1,7 +1,7 @@
 # scripts/generate_sentence.py
 
 from __future__ import annotations
-
+import hashlib
 import json
 import os
 import sys
@@ -14,6 +14,29 @@ from dotenv import load_dotenv
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 DEFAULT_PROMPT_PATH = PROJECT_ROOT / "local" / "prompt.txt"
 
+def render_prompt(template: str, seed_text: str) -> str:
+    base = str(seed_text or "").strip()
+    if not base:
+        base = "default"
+
+    seed_hex = hashlib.sha256(base.encode("utf-8")).hexdigest()
+    bucket = int(seed_hex[:8], 16) % 6
+
+    pattern_map = {
+        0: "A",
+        1: "B",
+        2: "C",
+        3: "D",
+        4: "E",
+        5: "F",
+    }
+    selected_pattern = pattern_map[bucket]
+
+    return (
+        template
+        .replace("{{PROMPT_SEED}}", base)
+        .replace("{{PATTERN_CODE}}", selected_pattern)
+    )
 
 def load_settings() -> dict[str, str | int]:
     load_dotenv(PROJECT_ROOT / ".env")
@@ -23,6 +46,7 @@ def load_settings() -> dict[str, str | int]:
         "prompt_path": os.getenv("PROMPT_PATH", str(DEFAULT_PROMPT_PATH)),
         "max_retries": int(os.getenv("MAX_RETRIES", "3")),
         "request_timeout": int(os.getenv("REQUEST_TIMEOUT", "120")),
+        "prompt_seed": os.getenv("PROMPT_SEED", ""),
     }
 
 
@@ -207,7 +231,9 @@ def extract_json_payload(raw: str) -> dict[str, str]:
 
 def main() -> int:
     settings = load_settings()
-    prompt = load_prompt(str(settings["prompt_path"]))
+
+    prompt_template = load_prompt(str(settings["prompt_path"]))
+    prompt = render_prompt(prompt_template, str(settings["prompt_seed"]))
 
     last_output = ""
     for attempt in range(1, int(settings["max_retries"]) + 1):
