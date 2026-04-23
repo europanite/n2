@@ -1,6 +1,18 @@
 {
   "items": [
     {
+      "id": "feed_20260423_161308",
+      "kind": "event",
+      "date": "2026-04-23",
+      "created_at": "2026-04-23T07:13:08Z",
+      "text": "うんこが落ちている以上、そのままにしておくわけにはいかない。\n\n\n学習ポイント: 『〜わけにはいかない』は、事情や常識のためにそうすることができないと述べる表現である。\n\n\n英訳: As long as poop is lying there, we cannot just leave it as it is.",
+      "tweet": "うんこが落ちている以上、そのままにしておくわけにはいかない。\n\n\n学習ポイント: 『〜わけにはいかない』は、事情や常識のためにそうすることができないと述べる表現である。\n\n\n英訳: As long as poop is lying there, we cannot just leave it as it is.",
+      "place": "",
+      "links": [],
+      "avatar_image": "image/avatar/normal.png",
+      "permalink": "./posts/feed_20260423_161308/index.html"
+    },
+    {
       "id": "feed_20260423_154143",
       "kind": "event",
       "date": "2026-04-23",
@@ -312,24 +324,12 @@
       "id": "feed_20260422_115700",
       "image_url": "image/avatar/normal.png",
       "permalink": "./posts/feed_20260422_115700/index.html"
-    },
-    {
-      "id": "feed_20260422_205042",
-      "kind": "event",
-      "date": "2026-04-22",
-      "created_at": "2026-04-22T11:50:42Z",
-      "text": "教室でノートをひっくり返した彼は、慌てて「うんこ」を隠す手遅れの状態になっていた。",
-      "tweet": "教室でノートをひっくり返した彼は、慌てて「うんこ」を隠す手遅れの状態になっていた。",
-      "place": "",
-      "links": [],
-      "avatar_image": "image/avatar/event.png",
-      "permalink": "./posts/feed_20260422_205042/index.html"
     }
   ],
   "count": 20,
   "page": 0,
   "page_size": 20,
-  "total_items": 23,
+  "total_items": 24,
   "total_pages": 2,
   "next_feed_url": "./feed/page_001.json"
 }
