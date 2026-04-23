@@ -175,6 +175,9 @@ def extract_json_payload(raw: str) -> dict[str, str]:
         raise ValueError(f"output keys must be exactly {sorted(expected_keys)}")
 
     text = str(data.get("text", "")).strip()
+    text = text.rstrip(".").rstrip("．")
+    if text and text[-1] not in "。！？":
+        text = text + "。"
     study_point = str(data.get("study_point", "")).strip()
     translation_en = str(data.get("translation_en", "")).strip()
 
@@ -189,9 +192,9 @@ def extract_json_payload(raw: str) -> dict[str, str]:
 
     combined_text = "\n".join(
         [
-            text,
-            f"学習ポイント: {study_point}",
-            f"英訳: {translation_en}",
+            text,"\n",
+            f"学習ポイント: {study_point}","\n",
+            f"英訳: {translation_en}","\n",
         ]
     )
 
