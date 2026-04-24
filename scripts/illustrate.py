@@ -198,11 +198,27 @@ def resolve_latest_entry(latest_path: Path) -> tuple[dict[str, Any], Path]:
 def build_prompt(text: str, place: str) -> tuple[str, str]:
     core = " ".join((text or "").split()).strip()[:240]
     p = (place or "").strip()
+
+    no_text_rule = (
+        "plain illustration only, no readable text, no letters, no captions, "
+        "no speech bubbles, no signs, no posters, no labels, no handwriting"
+    )
+
     if PROMPT_TMPL:
         prompt = _render(PROMPT_TMPL, place=p, core=core)
+        prompt = f"{prompt}, {no_text_rule}"
     else:
-        prompt = f"cinematic illustration, {p}, based on this short story: {core}" if p else f"cinematic illustration, based on this short story: {core}"
+        base = f"cinematic illustration, {p}, based on this short story: {core}" if p else f"cinematic illustration, based on this short story: {core}"
+        prompt = f"{base}, {no_text_rule}"
+
     negative = _render(NEGATIVE_TMPL, place=p, core=core) if NEGATIVE_TMPL else ""
+    negative = ", ".join(
+        x for x in [
+            negative,
+            "text, letters, words, captions, speech bubbles, dialogue balloons, signs, posters, labels, handwriting, watermark, logo",
+        ]
+        if x
+    )
     return prompt, negative
 
 def _match_item(item: dict, *, date: str, text: str, generated_at: str) -> bool:

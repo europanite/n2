@@ -160,6 +160,12 @@ jobs:
               "permalink": f"./posts/fixed-{kind}-{stamp_local}/index.html",
           }
 
+          if payload.get("study_point"):
+              entry["study_point"] = payload["study_point"]
+
+          if payload.get("translation_en"):
+              entry["translation_en"] = payload["translation_en"]
+
           if fixed_image:
               entry["image"] = fixed_image
               entry["fixed_image"] = fixed_image
