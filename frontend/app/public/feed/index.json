@@ -1,6 +1,37 @@
 {
   "items": [
     {
+      "id": "feed_20260424_205811",
+      "kind": "event",
+      "date": "2026-04-24",
+      "created_at": "2026-04-24T11:58:11Z",
+      "text": "うんこが落ちたので、地面に水しぶきが飛んだ。\n\n\n学習ポイント: 表現の組み立て方で使われる「の」の役割を説明します。この文では、'うんこが落ちて' と '地面に水しぶきが飛ぶ' の2つの状況が関連づけられて、一つの文にまとめられています。\n\n\n英訳: The water splashes flew up because the poop fell.",
+      "tweet": "うんこが落ちたので、地面に水しぶきが飛んだ。\n\n\n学習ポイント: 表現の組み立て方で使われる「の」の役割を説明します。この文では、'うんこが落ちて' と '地面に水しぶきが飛ぶ' の2つの状況が関連づけられて、一つの文にまとめられています。\n\n\n英訳: The water splashes flew up because the poop fell.",
+      "place": "",
+      "links": [],
+      "avatar_image": "image/avatar/normal.png",
+      "permalink": "./posts/feed_20260424_205811/index.html",
+      "study_point": "表現の組み立て方で使われる「の」の役割を説明します。この文では、'うんこが落ちて' と '地面に水しぶきが飛ぶ' の2つの状況が関連づけられて、一つの文にまとめられています。",
+      "translation_en": "The water splashes flew up because the poop fell."
+    },
+    {
+      "kind": "unko",
+      "text": "今日はとても立派なうんこを生成した。",
+      "tweet": "今日はとても立派なうんこを生成した。",
+      "place": "N2",
+      "published_at": "2026-04-24T11:54:26.661611Z",
+      "created_at": "2026-04-24T11:54:26.661611Z",
+      "updated_at": "2026-04-24T11:54:26.661611Z",
+      "avatar_image": "image/avatar/normal.png",
+      "image": "image/avatar/normal.png",
+      "fixed_image": "",
+      "links": [],
+      "weather": null,
+      "id": "feed_20260424_115426",
+      "image_url": "image/avatar/normal.png",
+      "permalink": "./posts/feed_20260424_115426/index.html"
+    },
+    {
       "id": "feed_20260424_170410",
       "kind": "event",
       "date": "2026-04-24",
@@ -757,7 +788,7 @@
       "permalink": "./posts/feed_20260422_183019/index.html"
     }
   ],
-  "count": 43,
+  "count": 45,
   "page_size": 20,
   "total_pages": 3,
   "first_feed_url": "./feed/page_000.json",
