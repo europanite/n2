@@ -81,6 +81,17 @@ def normalize_output(text: str) -> str:
     return " ".join(lines)
 
 
+
+def normalize_japanese_punctuation(text: str) -> str:
+    text = str(text or "").strip()
+    while "。。" in text:
+        text = text.replace("。。", "。")
+    while "！！" in text:
+        text = text.replace("！！", "！")
+    while "？？" in text:
+        text = text.replace("？？", "？")
+    return text
+
 def is_valid_sentence(text: str) -> bool:
     if not text:
         return False
@@ -180,7 +191,7 @@ def extract_json_payload(raw: str) -> dict[str, str]:
     if actual_keys != expected_keys:
         raise ValueError(f"output keys must be exactly {sorted(expected_keys)}")
 
-    text = str(data.get("text", "")).strip()
+    text = normalize_japanese_punctuation(str(data.get("text", "")).strip())
     text = text.rstrip(".").rstrip("．")
     if text and text[-1] not in "。！？":
         text = text + "。"
