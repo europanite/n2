@@ -1,6 +1,20 @@
 {
   "items": [
     {
+      "id": "feed_20260425_000916",
+      "kind": "event",
+      "date": "2026-04-25",
+      "created_at": "2026-04-24T15:09:16Z",
+      "text": "今日はうんこについて話すね。\n\n\n学習ポイント: 文末に疑问符を使用することで、文章の緊張感や疑問感を表現できる。。\n\n\n英訳: Today, let's talk about poop.",
+      "tweet": "今日はうんこについて話すね。\n\n\n学習ポイント: 文末に疑问符を使用することで、文章の緊張感や疑問感を表現できる。。\n\n\n英訳: Today, let's talk about poop.",
+      "place": "",
+      "links": [],
+      "avatar_image": "image/avatar/normal.png",
+      "permalink": "./posts/feed_20260425_000916/index.html",
+      "study_point": "文末に疑问符を使用することで、文章の緊張感や疑問感を表現できる。。",
+      "translation_en": "Today, let's talk about poop."
+    },
+    {
       "id": "feed_20260424_223010",
       "kind": "event",
       "date": "2026-04-24",
@@ -840,7 +854,7 @@
       "permalink": "./posts/feed_20260422_183019/index.html"
     }
   ],
-  "count": 47,
+  "count": 48,
   "page_size": 20,
   "total_pages": 3,
   "first_feed_url": "./feed/page_000.json",
