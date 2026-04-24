@@ -1,6 +1,20 @@
 {
   "items": [
     {
+      "id": "feed_20260425_073950",
+      "kind": "event",
+      "date": "2026-04-25",
+      "created_at": "2026-04-24T22:39:50Z",
+      "text": "うんこがたくさんありますね。\n\n\n学習ポイント: 「うんこ」は、排泄物を指し、文中に使われている表現です。\n\n\n英訳: There are a lot of poop.",
+      "tweet": "うんこがたくさんありますね。\n\n\n学習ポイント: 「うんこ」は、排泄物を指し、文中に使われている表現です。\n\n\n英訳: There are a lot of poop.",
+      "place": "",
+      "links": [],
+      "avatar_image": "image/avatar/normal.png",
+      "permalink": "./posts/feed_20260425_073950/index.html",
+      "study_point": "「うんこ」は、排泄物を指し、文中に使われている表現です。",
+      "translation_en": "There are a lot of poop."
+    },
+    {
       "id": "feed_20260425_064901",
       "kind": "event",
       "date": "2026-04-25",
@@ -972,7 +986,7 @@
       "permalink": "./posts/feed_20260422_183019/index.html"
     }
   ],
-  "count": 53,
+  "count": 54,
   "page_size": 20,
   "total_pages": 3,
   "first_feed_url": "./feed/page_000.json",
