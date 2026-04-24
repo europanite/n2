@@ -1,6 +1,20 @@
 {
   "items": [
     {
+      "id": "feed_20260425_084020",
+      "kind": "event",
+      "date": "2026-04-25",
+      "created_at": "2026-04-24T23:40:20Z",
+      "text": "今日の授業でうんこについて深く学びました。\n\n\n学習ポイント: 「うんこ」は排泄物を指し、主に食品から摂取した物質が体内で分解され排泄される様子を示します。\n\n\n英訳: Today's class taught me a lot about poop.",
+      "tweet": "今日の授業でうんこについて深く学びました。\n\n\n学習ポイント: 「うんこ」は排泄物を指し、主に食品から摂取した物質が体内で分解され排泄される様子を示します。\n\n\n英訳: Today's class taught me a lot about poop.",
+      "place": "",
+      "links": [],
+      "avatar_image": "image/avatar/normal.png",
+      "permalink": "./posts/feed_20260425_084020/index.html",
+      "study_point": "「うんこ」は排泄物を指し、主に食品から摂取した物質が体内で分解され排泄される様子を示します。",
+      "translation_en": "Today's class taught me a lot about poop."
+    },
+    {
       "id": "feed_20260425_073950",
       "kind": "event",
       "date": "2026-04-25",
@@ -994,7 +1008,7 @@
       "permalink": "./posts/feed_20260422_183019/index.html"
     }
   ],
-  "count": 54,
+  "count": 55,
   "page_size": 20,
   "total_pages": 3,
   "first_feed_url": "./feed/page_000.json",
