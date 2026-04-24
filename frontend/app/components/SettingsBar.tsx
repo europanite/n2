@@ -88,17 +88,6 @@ export default function SettingsBar({ title = "N2" }: Props) {
           >
             <Btn title="Contact" onPress={() => openUrl(CONTACT_URL)} />
           </View>
-
-          {/* Powered by: small + low emphasis */}
-          <TouchableOpacity
-            onPress={() => openUrl(REPO_URL)}
-            accessibilityRole="link"
-            style={{ opacity: 0.6 }}
-          >
-            <Text style={{ fontSize: 9, color: "#fff" }}>
-              Powered by <Text style={{ fontWeight: "600" }}>RAG Chat Bot</Text>
-            </Text>
-          </TouchableOpacity>
         </View>
       ) : (
         // WIDE: title pinned to center (independent of button width)

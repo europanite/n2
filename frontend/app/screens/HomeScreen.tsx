@@ -581,7 +581,7 @@ function normalizeWebAssetPath(p: string): string {
 
   if (Platform.OS === "web" && typeof window !== "undefined") {
     const baseSeg = window.location.pathname.split("/").filter(Boolean)[0] || "";
-    // If the path already includes the repo segment (e.g. "rag_chat_bot/..."),
+    // If the path already includes the repo segment,
     // strip it to avoid double-prefixing when resolving relative URLs.
     if (baseSeg) {
       if (s.startsWith(`/${baseSeg}/`)) s = `./${s.slice(baseSeg.length + 2)}`;
