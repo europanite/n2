@@ -1,6 +1,20 @@
 {
   "items": [
     {
+      "id": "feed_20260424_170410",
+      "kind": "event",
+      "date": "2026-04-24",
+      "created_at": "2026-04-24T08:04:10Z",
+      "text": "うんこが汚いから今日は学校に行かない。\n\n\n学習ポイント: 文末に利用した「。」の働きとして、文章の意味や目的を強調します。\n\n\n英訳: Because the poop is dirty, I won't go to school today.",
+      "tweet": "うんこが汚いから今日は学校に行かない。\n\n\n学習ポイント: 文末に利用した「。」の働きとして、文章の意味や目的を強調します。\n\n\n英訳: Because the poop is dirty, I won't go to school today.",
+      "place": "",
+      "links": [],
+      "avatar_image": "image/avatar/normal.png",
+      "permalink": "./posts/feed_20260424_170410/index.html",
+      "study_point": "文末に利用した「。」の働きとして、文章の意味や目的を強調します。",
+      "translation_en": "Because the poop is dirty, I won't go to school today."
+    },
+    {
       "id": "feed_20260424_143647",
       "kind": "event",
       "date": "2026-04-24",
@@ -735,7 +749,7 @@
       "permalink": "./posts/feed_20260422_183019/index.html"
     }
   ],
-  "count": 42,
+  "count": 43,
   "page_size": 20,
   "total_pages": 3,
   "first_feed_url": "./feed/page_000.json",
