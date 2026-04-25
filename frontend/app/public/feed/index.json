@@ -1,6 +1,20 @@
 {
   "items": [
     {
+      "id": "feed_20260426_044444",
+      "kind": "event",
+      "date": "2026-04-26",
+      "created_at": "2026-04-25T19:44:44Z",
+      "text": "今日の朝食でうんこが入っていた。\n\n\n学習ポイント: 文末に使用される文章形として、かきものを利用することがある。今日の朝食では具体的な例として、かきものを用いて述べた。\n\n\n英訳: There was poop in today's breakfast.",
+      "tweet": "今日の朝食でうんこが入っていた。\n\n\n学習ポイント: 文末に使用される文章形として、かきものを利用することがある。今日の朝食では具体的な例として、かきものを用いて述べた。\n\n\n英訳: There was poop in today's breakfast.",
+      "place": "",
+      "links": [],
+      "avatar_image": "image/avatar/normal.png",
+      "permalink": "./posts/feed_20260426_044444/index.html",
+      "study_point": "文末に使用される文章形として、かきものを利用することがある。今日の朝食では具体的な例として、かきものを用いて述べた。",
+      "translation_en": "There was poop in today's breakfast."
+    },
+    {
       "id": "feed_20260426_035432",
       "kind": "event",
       "date": "2026-04-26",
@@ -1297,7 +1311,7 @@
       "permalink": "./posts/feed_20260422_183019/index.html"
     }
   ],
-  "count": 68,
+  "count": 69,
   "page_size": 20,
   "total_pages": 4,
   "first_feed_url": "./feed/page_000.json",
