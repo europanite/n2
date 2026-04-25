@@ -26,6 +26,8 @@ jobs:
   prepare:
     runs-on: ubuntu-latest
     timeout-minutes: 30
+    env:
+      OLLAMA_CHAT_MODEL: qwen2.5:3b-instruct
     services:
       ollama:
         image: ollama/ollama:latest
@@ -46,21 +48,10 @@ jobs:
           ref: main
           fetch-depth: 0
 
-      - name: Select Ollama model
-        run: |
-          set -euo pipefail
-          echo "OLLAMA_CHAT_MODEL=qwen2.5:3b-instruct" >> "$GITHUB_ENV"
-
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-
-      - name: Install deps
-        run: |
-          set -euo pipefail
-          python -m pip install --upgrade pip
-          pip install requests
 
       - name: Wait for Ollama API
         run: |
@@ -104,8 +95,6 @@ jobs:
           }
           print(json.dumps(payload, ensure_ascii=False))
           PY
-
-          cat /tmp/ollama_warmup.json
 
           curl --fail --show-error \
             -H 'Content-Type: application/json' \
@@ -199,78 +188,6 @@ jobs:
     needs: fixed
     if: needs.fixed.outputs.changed == '1'
     runs-on: ubuntu-latest
-    env:
-      BACKEND_PORT: "8000"
-      AUTH_SECRET: ""
-      AUTH_EXPIRE_MINUTES: "60"
-      DB_HOST: "db"
-      DB_PORT: "5432"
-      DB_NAME: "app_db"
-      DB_USER: "app_user"
-      DB_PASS: "app_pass"
-      DATABASE_URL: "postgresql+psycopg[binary]://${DB_USER}:${DB_PASS}@${DB_HOST}:${DB_PORT}/${DB_NAME}"
-
-      EXPO_TUNNEL: "false"
-      EXPO_DEVTOOLS_LISTEN_ADDRESS: "0.0.0.0"
-      EXPO_PUBLIC_API_HOST: "127.0.0.1"
-      EXPO_PUBLIC_API_PORT: "8000"
-      EXPO_PUBLIC_API_BASE: "http://127.0.0.1:8000"
-      EXPO_PUBLIC_FEED_URL: "./feed/index.json"
-      EXPO_PUBLIC_GA_MEASUREMENT_ID: ""
-
-      OLLAMA_TIMEOUT_S: "512"
-      MODELS_DIR: "./models"
-
-      DOCS_DIR: "/data/json"
-      RAG_AUTO_INDEX: "false"
-      RAG_REBUILD_ON_START: "false"
-      RAG_INDEX_FAIL_FAST: "false"
-      RAG_REINDEX_ENABLED: "true"
-      RAG_AUDIT: "1"
-      RAG_AUDIT_MAX_ATTEMPTS: "2"
-      RAG_AUDIT_REWRITE: "1"
-
-      LLM_PROVIDER: "ollama"
-      EMBEDDING_PROVIDER: "ollama"
-      OLLAMA_BASE_URL: "http://ollama:11434"
-      RAG_MODEL: "qwen3:8b"
-      AUDIT_MODEL: "qwen3:8b"
-      EMBEDDING_MODEL: "mxbai-embed-large"
-
-      RAG_CHUNK_SIZE: "128"
-      RAG_TOP_K: "16"
-
-      CHROMA_DB_DIR: "/chroma"
-      CHROMA_COLLECTION_NAME: "documents"
-      RAG_CHROMA_SOURCE: "gdrive"
-      RAG_CHROMA_GDRIVE_URL: ""
-      RAG_CHROMA_S3_BUCKET: ""
-      RAG_CHROMA_S3_PREFIX: "rag/chroma"
-      RAG_CHROMA_LOCAL_DIR: "./chroma_db_seed"
-
-      CURL_MAX_TIME: "512"
-      CURL_RETRIES: "0"
-      MAX_CHARS: "220"
-      TZ_NAME: "Asia/Tokyo"
-      HASHTAGS: ""
-      FEED_PATH: "frontend/app/public"
-      LATEST_PATH: "frontend/app/public/latest.json"
-      EXPO_PUBLIC_USE_SLOT: "1"
-      EXPO_PUBLIC_SLOT_ROTATE_MS: "6500"
-      EXPO_PUBLIC_SLOT_FADE_MS: "800"
-      EXPO_PUBLIC_FEED_JSON_URL: ""
-      EXPO_PUBLIC_SHARE_SD_INDEX_URL: ""
-      EXPO_PUBLIC_FEEDBACK_FORM_URL: ""
-
-      INPUT_IMAGE: ""
-      MODE: "text2img"
-      LORA_PATH: ""
-      LORA_SCALE: "0"
-      MIRROR_AUG: "0"
-      STEPS: "6"
-      GUIDANCE_SCALE: "2.0"
-      NEGATIVE: "photorealistic, text, watermark, logo, low quality, blurry, underexposed, too dark"
-
     outputs:
       changed: ${{ steps.publish.outputs.changed }}
       sha: ${{ steps.publish.outputs.sha }}
@@ -303,116 +220,34 @@ jobs:
           mkdir -p frontend/app/public
           tar -C frontend/app/public -xzf /tmp/fixed-entry-state/fixed-entry-state.tgz
 
-      - name: Extract illustration text from latest entry
-        run: |
-          set -euo pipefail
-          python - <<'PY'
-          import json
-          from pathlib import Path
-
-          public_dir = Path("frontend/app/public")
-          latest = json.loads((public_dir / "latest.json").read_text(encoding="utf-8"))
-
-          text = str(latest.get("text", "") or latest.get("tweet", "")).strip()
-          if not text:
-              feed_url = str(latest.get("feed_url", "")).strip()
-              if not feed_url:
-                  raise SystemExit("latest.json has neither text/tweet nor feed_url")
-              page_path = public_dir / feed_url.lstrip("./")
-              page = json.loads(page_path.read_text(encoding="utf-8"))
-              items = page.get("items") or []
-              if not items or not isinstance(items[0], dict):
-                  raise SystemExit("feed page has no items")
-              text = str(items[0].get("text", "") or items[0].get("tweet", "")).strip()
-
-          if not text:
-              raise SystemExit("latest entry text is empty")
-
-          Path("/tmp/illustration_text.txt").write_text(text, encoding="utf-8")
-          PY
 
       - name: Create compose env file for illustrate
         run: |
           set -euo pipefail
-          {
-            cat <<'EOF'
-          BACKEND_PORT=8000
-          AUTH_SECRET=
-          AUTH_EXPIRE_MINUTES=60
-          DB_HOST=db
-          DB_PORT=5432
-          DB_NAME=app_db
-          DB_USER=app_user
-          DB_PASS=app_pass
-          DATABASE_URL=postgresql+psycopg[binary]://${DB_USER}:${DB_PASS}@${DB_HOST}:${DB_PORT}/${DB_NAME}
-
-          EXPO_TUNNEL=false
-          EXPO_DEVTOOLS_LISTEN_ADDRESS=0.0.0.0
+          cp .env /tmp/event-compose.env
+          cat >> /tmp/event-compose.env <<'EOF'
+          REACT_NATIVE_PACKAGER_HOSTNAME=127.0.0.1
           EXPO_PUBLIC_API_HOST=127.0.0.1
-          EXPO_PUBLIC_API_PORT=8000
           EXPO_PUBLIC_API_BASE=http://127.0.0.1:8000
-          EXPO_PUBLIC_FEED_URL=./feed/index.json
           EXPO_PUBLIC_GA_MEASUREMENT_ID=
-
-          OLLAMA_TIMEOUT_S=512
-          MODELS_DIR=./models
-
-          DOCS_DIR=/data/json
-          RAG_AUTO_INDEX=false
-          RAG_REBUILD_ON_START=false
-          RAG_INDEX_FAIL_FAST=false
-          RAG_REINDEX_ENABLED=true
-          RAG_AUDIT=1
-          RAG_AUDIT_MAX_ATTEMPTS=2
-          RAG_AUDIT_REWRITE=1
-
-          LLM_PROVIDER=ollama
-          EMBEDDING_PROVIDER=ollama
-          OLLAMA_BASE_URL=http://ollama:11434
           RAG_MODEL=qwen3:8b
           AUDIT_MODEL=qwen3:8b
-          EMBEDDING_MODEL=mxbai-embed-large
-
-          RAG_CHUNK_SIZE=128
-          RAG_TOP_K=16
-
-          CHROMA_DB_DIR=/chroma
-          CHROMA_COLLECTION_NAME=documents
-          RAG_CHROMA_SOURCE=gdrive
-          RAG_CHROMA_GDRIVE_URL=
-          RAG_CHROMA_S3_BUCKET=
-          RAG_CHROMA_S3_PREFIX=rag/chroma
-          RAG_CHROMA_LOCAL_DIR=./chroma_db_seed
-
-          CURL_MAX_TIME=512
-          CURL_RETRIES=0
-          MAX_CHARS=220
-          TZ_NAME=Asia/Tokyo
-          HASHTAGS=
-          FEED_PATH=frontend/app/public
-          LATEST_PATH=frontend/app/public/latest.json
-          EXPO_PUBLIC_USE_SLOT=1
-          EXPO_PUBLIC_SLOT_ROTATE_MS=6500
-          EXPO_PUBLIC_SLOT_FADE_MS=800
-          EXPO_PUBLIC_FEED_JSON_URL=
-          EXPO_PUBLIC_SHARE_SD_INDEX_URL=
-          EXPO_PUBLIC_FEEDBACK_FORM_URL=
+          MODE=text2img
+          LORA_PATH=
+          LORA_SCALE=0
+          STEPS=6
+          GUIDANCE_SCALE=2.0
+          NEGATIVE=photorealistic, text, watermark, logo, low quality, blurry, underexposed, too dark
           EOF
-            printf 'ILLUSTRATION_TEXT=%s\n' "$(cat /tmp/illustration_text.txt)"
-          } > /tmp/event-compose.env
 
       - name: Build illustrate image
-        env:
-          REACT_NATIVE_PACKAGER_HOSTNAME: "127.0.0.1"
         run: |
           set -euo pipefail
           docker compose --env-file /tmp/event-compose.env -f docker-compose.yml build illustrate
 
       - name: Generate illustrated image and patch feed
         env:
-          REACT_NATIVE_PACKAGER_HOSTNAME: "127.0.0.1"
           PATCH_JSON: "1"
-          OUT_DIR: ""
           MIRROR_AUG: "1"
           SEED_OFFSET: "${{ github.run_number }}"
           SDXL_MODEL_ID: stabilityai/sdxl-turbo
