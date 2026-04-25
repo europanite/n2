@@ -1,6 +1,20 @@
 {
   "items": [
     {
+      "id": "feed_20260426_023840",
+      "kind": "event",
+      "date": "2026-04-26",
+      "created_at": "2026-04-25T17:38:40Z",
+      "text": "うんこが汚いから掃除しなきゃ。\n\n\n学習ポイント: 文型：『[動詞]する必要がある』\n\n\n英訳: Cleaning is necessary because the poop is dirty.",
+      "tweet": "うんこが汚いから掃除しなきゃ。\n\n\n学習ポイント: 文型：『[動詞]する必要がある』\n\n\n英訳: Cleaning is necessary because the poop is dirty.",
+      "place": "",
+      "links": [],
+      "avatar_image": "image/avatar/normal.png",
+      "permalink": "./posts/feed_20260426_023840/index.html",
+      "study_point": "文型：『[動詞]する必要がある』",
+      "translation_en": "Cleaning is necessary because the poop is dirty."
+    },
+    {
       "id": "feed_20260426_014226",
       "kind": "event",
       "date": "2026-04-26",
@@ -1253,7 +1267,7 @@
       "permalink": "./posts/feed_20260422_183019/index.html"
     }
   ],
-  "count": 66,
+  "count": 67,
   "page_size": 20,
   "total_pages": 4,
   "first_feed_url": "./feed/page_000.json",
