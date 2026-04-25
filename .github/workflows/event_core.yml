@@ -224,21 +224,8 @@ jobs:
       - name: Create compose env file for illustrate
         run: |
           set -euo pipefail
+          test -f .env
           cp .env /tmp/event-compose.env
-          cat >> /tmp/event-compose.env <<'EOF'
-          REACT_NATIVE_PACKAGER_HOSTNAME=127.0.0.1
-          EXPO_PUBLIC_API_HOST=127.0.0.1
-          EXPO_PUBLIC_API_BASE=http://127.0.0.1:8000
-          EXPO_PUBLIC_GA_MEASUREMENT_ID=
-          RAG_MODEL=qwen3:8b
-          AUDIT_MODEL=qwen3:8b
-          MODE=text2img
-          LORA_PATH=
-          LORA_SCALE=0
-          STEPS=6
-          GUIDANCE_SCALE=2.0
-          NEGATIVE=photorealistic, text, watermark, logo, low quality, blurry, underexposed, too dark
-          EOF
 
       - name: Build illustrate image
         run: |
