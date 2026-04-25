@@ -1,6 +1,20 @@
 {
   "items": [
     {
+      "id": "feed_20260425_185525",
+      "kind": "event",
+      "date": "2026-04-25",
+      "created_at": "2026-04-25T09:55:25Z",
+      "text": "今日の授業でうんこについて学んだ。\n\n\n学習ポイント: 「うんこ」が「排泄物」という意味を持つ。\n\n\n英訳: Today, I learned about 'poop' in class.",
+      "tweet": "今日の授業でうんこについて学んだ。\n\n\n学習ポイント: 「うんこ」が「排泄物」という意味を持つ。\n\n\n英訳: Today, I learned about 'poop' in class.",
+      "place": "",
+      "links": [],
+      "avatar_image": "image/avatar/normal.png",
+      "permalink": "./posts/feed_20260425_185525/index.html",
+      "study_point": "「うんこ」が「排泄物」という意味を持つ。",
+      "translation_en": "Today, I learned about 'poop' in class."
+    },
+    {
       "id": "feed_20260425_175434",
       "kind": "event",
       "date": "2026-04-25",
@@ -1082,7 +1096,7 @@
       "permalink": "./posts/feed_20260422_183019/index.html"
     }
   ],
-  "count": 58,
+  "count": 59,
   "page_size": 20,
   "total_pages": 3,
   "first_feed_url": "./feed/page_000.json",
