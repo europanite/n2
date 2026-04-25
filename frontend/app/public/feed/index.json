@@ -1,6 +1,20 @@
 {
   "items": [
     {
+      "id": "feed_20260425_175434",
+      "kind": "event",
+      "date": "2026-04-25",
+      "created_at": "2026-04-25T08:54:34Z",
+      "text": "うんこが綺麗にできるようになった。\n\n\n学習ポイント: 文型：「前置詞+形容詞」を使用した表現。\n\n\n英訳: I was able to make my poop look neat.",
+      "tweet": "うんこが綺麗にできるようになった。\n\n\n学習ポイント: 文型：「前置詞+形容詞」を使用した表現。\n\n\n英訳: I was able to make my poop look neat.",
+      "place": "",
+      "links": [],
+      "avatar_image": "image/avatar/normal.png",
+      "permalink": "./posts/feed_20260425_175434/index.html",
+      "study_point": "文型：「前置詞+形容詞」を使用した表現。",
+      "translation_en": "I was able to make my poop look neat."
+    },
+    {
       "id": "feed_20260425_161651",
       "kind": "event",
       "date": "2026-04-25",
@@ -1060,7 +1074,7 @@
       "permalink": "./posts/feed_20260422_183019/index.html"
     }
   ],
-  "count": 57,
+  "count": 58,
   "page_size": 20,
   "total_pages": 3,
   "first_feed_url": "./feed/page_000.json",
