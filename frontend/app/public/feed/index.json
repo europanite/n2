@@ -1,6 +1,20 @@
 {
   "items": [
     {
+      "id": "feed_20260426_063810",
+      "kind": "event",
+      "date": "2026-04-26",
+      "created_at": "2026-04-25T21:38:10Z",
+      "text": "今日はうんこをたべたら美味しいから試してみよう。\n\n\n学習ポイント: 本文中の「うんこ」を「排泄物」と解釈。これには個人の好みや文化、科学的な理解などにより様々な意味がある。\n\n\n英訳: Today, eating poop is delicious and worth trying.",
+      "tweet": "今日はうんこをたべたら美味しいから試してみよう。\n\n\n学習ポイント: 本文中の「うんこ」を「排泄物」と解釈。これには個人の好みや文化、科学的な理解などにより様々な意味がある。\n\n\n英訳: Today, eating poop is delicious and worth trying.",
+      "place": "",
+      "links": [],
+      "avatar_image": "image/avatar/normal.png",
+      "permalink": "./posts/feed_20260426_063810/index.html",
+      "study_point": "本文中の「うんこ」を「排泄物」と解釈。これには個人の好みや文化、科学的な理解などにより様々な意味がある。",
+      "translation_en": "Today, eating poop is delicious and worth trying."
+    },
+    {
       "id": "feed_20260426_054007",
       "kind": "event",
       "date": "2026-04-26",
@@ -1341,7 +1355,7 @@
       "permalink": "./posts/feed_20260422_183019/index.html"
     }
   ],
-  "count": 70,
+  "count": 71,
   "page_size": 20,
   "total_pages": 4,
   "first_feed_url": "./feed/page_000.json",
