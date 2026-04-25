@@ -13,11 +13,6 @@ import {
   Pressable,
 } from "react-native";
 
-const RAW_CONTACT_URL = (process.env.EXPO_PUBLIC_FEEDBACK_FORM_URL ?? "").trim();
-const CONTACT_FORM_URL =
-  RAW_CONTACT_URL.startsWith("http://") || RAW_CONTACT_URL.startsWith("https://")
-    ? RAW_CONTACT_URL
-    : "";
 const RAW_ADS_URL = (process.env.EXPO_PUBLIC_ADS_FORM_URL ?? "").trim();
 const ADS_FORM_URL =
   RAW_ADS_URL.startsWith("http://") || RAW_ADS_URL.startsWith("https://")
