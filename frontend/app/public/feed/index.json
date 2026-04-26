@@ -1,6 +1,20 @@
 {
   "items": [
     {
+      "id": "feed_20260426_114150",
+      "kind": "event",
+      "date": "2026-04-26",
+      "created_at": "2026-04-26T02:41:50Z",
+      "text": "うんこを見ると笑ってしまう。\n\n\n学習ポイント: 日本語の慣用句「うんこを見る」は、物事を単純化したり、軽くとらえたりすることを意味します。\n\n\n英訳: Seeing poop makes me laugh.",
+      "tweet": "うんこを見ると笑ってしまう。\n\n\n学習ポイント: 日本語の慣用句「うんこを見る」は、物事を単純化したり、軽くとらえたりすることを意味します。\n\n\n英訳: Seeing poop makes me laugh.",
+      "place": "",
+      "links": [],
+      "avatar_image": "image/avatar/normal.png",
+      "permalink": "./posts/feed_20260426_114150/index.html",
+      "study_point": "日本語の慣用句「うんこを見る」は、物事を単純化したり、軽くとらえたりすることを意味します。",
+      "translation_en": "Seeing poop makes me laugh."
+    },
+    {
       "id": "feed_20260426_112106",
       "kind": "event",
       "date": "2026-04-26",
@@ -1457,7 +1471,7 @@
       "permalink": "./posts/feed_20260422_183019/index.html"
     }
   ],
-  "count": 76,
+  "count": 77,
   "page_size": 20,
   "total_pages": 4,
   "first_feed_url": "./feed/page_000.json",
