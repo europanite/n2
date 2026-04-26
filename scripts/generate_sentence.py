@@ -12,7 +12,7 @@ from dotenv import load_dotenv
 
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
-DEFAULT_PROMPT_PATH = PROJECT_ROOT / "local" / "prompt.txt"
+DEFAULT_PROMPT_PATH = PROJECT_ROOT / "scripts" / "prompt_plain.txt"
 
 def render_prompt(template: str, seed_text: str) -> str:
     base = str(seed_text or "").strip()
@@ -175,6 +175,29 @@ def is_valid_translation_en(translation_en: str) -> bool:
     return True
 
 
+
+def extract_text_payload(raw: str) -> str:
+    text = normalize_japanese_punctuation(normalize_output(raw))
+    text = text.strip().strip('"').strip("'")
+    text = text.rstrip(".").rstrip("．")
+    if text and text[-1] not in "。！？":
+        text = text + "。"
+    if not text:
+        raise ValueError("output text is empty")
+    if not quality_check_mock(text):
+        raise ValueError(f"mock quality check failed: {text}")
+    return text
+
+
+def quality_check_mock(text: str) -> bool:
+    """Temporary mock quality check.
+
+    This intentionally accepts every non-empty string so the pipeline can keep
+    moving while the real quality check is redesigned.
+    """
+    return bool(str(text or "").strip())
+
+
 def extract_json_payload(raw: str) -> dict[str, str]:
     normalized = normalize_output(raw)
 
@@ -238,14 +261,14 @@ def main() -> int:
                 timeout=int(settings["request_timeout"]),
             )
             last_output = normalize_output(raw)
-            payload = extract_json_payload(raw)
-            print(json.dumps(payload, ensure_ascii=False))
+            text = extract_text_payload(raw)
+            print(text)
             return 0
 
         except (requests.RequestException, ValueError) as exc:
             print(f"[retry {attempt}] invalid output: {last_output or exc}", file=sys.stderr)
 
-    print("Failed to generate a valid sentence JSON.", file=sys.stderr)
+    print("Failed to generate a valid sentence text.", file=sys.stderr)
     if last_output:
         print(f"Last output: {last_output}", file=sys.stderr)
     return 1
