@@ -12,7 +12,7 @@ from dotenv import load_dotenv
 
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
-DEFAULT_PROMPT_PATH = PROJECT_ROOT / "scripts" / "prompt_plain.txt"
+DEFAULT_PROMPT_PATH = PROJECT_ROOT / "scripts" / "prompt_translation.txt"
 
 def render_prompt(template: str, seed_text: str) -> str:
     base = str(seed_text or "").strip()
@@ -177,13 +177,23 @@ def is_valid_translation_en(translation_en: str) -> bool:
 
 
 def extract_text_payload(raw: str) -> str:
-    text = normalize_japanese_punctuation(normalize_output(raw))
-    text = text.strip().strip('"').strip("'")
-    text = text.rstrip(".").rstrip("．")
-    if text and text[-1] not in "。！？":
-        text = text + "。"
+    lines = [line.strip() for line in str(raw or "").splitlines() if line.strip()]
+    text = "\n".join(lines).strip().strip('"').strip("'")
     if not text:
         raise ValueError("output text is empty")
+
+    output_lines = [line.strip() for line in text.splitlines() if line.strip()]
+    if output_lines:
+        first_line = normalize_japanese_punctuation(output_lines[0])
+        first_line = first_line.rstrip(".").rstrip("．")
+        if first_line and first_line[-1] not in "。！？":
+            first_line = first_line + "。"
+        output_lines[0] = first_line
+
+    if len(output_lines) >= 2 and not output_lines[1].startswith("英訳:"):
+        output_lines[1] = f"英訳: {output_lines[1]}"
+
+    text = "\n".join(output_lines)
     if not quality_check_mock(text):
         raise ValueError(f"mock quality check failed: {text}")
     return text

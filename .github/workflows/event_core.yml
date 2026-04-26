@@ -112,7 +112,7 @@ jobs:
         env:
           OLLAMA_BASE_URL: "http://127.0.0.1:11434"
           OLLAMA_MODEL: ${{ env.OLLAMA_CHAT_MODEL }}
-          PROMPT_PATH: "scripts/prompt_plain.txt"
+          PROMPT_PATH: "scripts/prompt_translation.txt"
           REQUEST_TIMEOUT: "300"
           MAX_RETRIES: "3"
           AVATAR_IMAGE: ${{ inputs.avatar_image }}
