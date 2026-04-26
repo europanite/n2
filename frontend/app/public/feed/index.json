@@ -1,6 +1,20 @@
 {
   "items": [
     {
+      "id": "feed_20260426_190354",
+      "kind": "event",
+      "date": "2026-04-26",
+      "created_at": "2026-04-26T10:03:54Z",
+      "text": "うんこが大きくなると、困ったね。\n\n\n学習ポイント: 「大きい」は形容詞で，何か物事のサイズや範囲について言及します。例えば、「大きな木」と言うことで、その木が広い範囲を占めていることを表現します。\n\n\n英訳: When poop gets bigger, it's a hassle.",
+      "tweet": "うんこが大きくなると、困ったね。\n\n\n学習ポイント: 「大きい」は形容詞で，何か物事のサイズや範囲について言及します。例えば、「大きな木」と言うことで、その木が広い範囲を占めていることを表現します。\n\n\n英訳: When poop gets bigger, it's a hassle.",
+      "place": "",
+      "links": [],
+      "avatar_image": "image/avatar/normal.png",
+      "permalink": "./posts/feed_20260426_190354/index.html",
+      "study_point": "「大きい」は形容詞で，何か物事のサイズや範囲について言及します。例えば、「大きな木」と言うことで、その木が広い範囲を占めていることを表現します。",
+      "translation_en": "When poop gets bigger, it's a hassle."
+    },
+    {
       "id": "feed_20260426_180154",
       "kind": "event",
       "date": "2026-04-26",
@@ -1545,14 +1559,15 @@
       "permalink": "./posts/feed_20260422_183019/index.html"
     }
   ],
-  "count": 80,
+  "count": 81,
   "page_size": 20,
-  "total_pages": 4,
+  "total_pages": 5,
   "first_feed_url": "./feed/page_000.json",
   "pages": [
     "./feed/page_000.json",
     "./feed/page_001.json",
     "./feed/page_002.json",
-    "./feed/page_003.json"
+    "./feed/page_003.json",
+    "./feed/page_004.json"
   ]
 }
