@@ -1,6 +1,20 @@
 {
   "items": [
     {
+      "id": "feed_20260426_220739",
+      "kind": "event",
+      "date": "2026-04-26",
+      "created_at": "2026-04-26T13:07:39Z",
+      "text": "うんこが汚いから手を洗おうかな。\n\n\n学習ポイント: 文型：『[動詞]が [形容詞/副詞]だから [動詞]しよう』。この文型は主語（ここでは「手を洗う」という動作をする人）と目的（ここでは「手を洗うこと」の理由である「汚いから」）を含んでいます。\n\n\n英訳: I should wash my hands because they are dirty.",
+      "tweet": "うんこが汚いから手を洗おうかな。\n\n\n学習ポイント: 文型：『[動詞]が [形容詞/副詞]だから [動詞]しよう』。この文型は主語（ここでは「手を洗う」という動作をする人）と目的（ここでは「手を洗うこと」の理由である「汚いから」）を含んでいます。\n\n\n英訳: I should wash my hands because they are dirty.",
+      "place": "",
+      "links": [],
+      "avatar_image": "image/avatar/normal.png",
+      "permalink": "./posts/feed_20260426_220739/index.html",
+      "study_point": "文型：『[動詞]が [形容詞/副詞]だから [動詞]しよう』。この文型は主語（ここでは「手を洗う」という動作をする人）と目的（ここでは「手を洗うこと」の理由である「汚いから」）を含んでいます。",
+      "translation_en": "I should wash my hands because they are dirty."
+    },
+    {
       "id": "feed_20260426_204034",
       "kind": "event",
       "date": "2026-04-26",
@@ -1589,7 +1603,7 @@
       "permalink": "./posts/feed_20260422_183019/index.html"
     }
   ],
-  "count": 82,
+  "count": 83,
   "page_size": 20,
   "total_pages": 5,
   "first_feed_url": "./feed/page_000.json",
