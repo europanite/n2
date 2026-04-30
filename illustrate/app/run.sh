@@ -14,13 +14,8 @@ if [ ! -f "$LATEST_PATH" ]; then
   exit 2
 fi
 
- echo "[illustrate] MODEL_ID=${MODEL_ID}"
- echo "[illustrate] SDXL_MODEL_ID=${SDXL_MODEL_ID}"
+echo "[illustrate] MODEL_ID=${MODEL_ID}"
+echo "[illustrate] SDXL_MODEL_ID=${SDXL_MODEL_ID}"
 
-if [ -n "${INPUT_IMAGE:-}" ]; then
-  echo "[illustrate] INPUT_IMAGE provided -> running scripts/arrange.py (img2img/pillow)"
-  python scripts/arrange.py
-else
-  echo "[illustrate] No INPUT_IMAGE -> running scripts/illustrate.py (text2img)"
-  python scripts/illustrate.py
-fi
+echo "[illustrate] No INPUT_IMAGE -> running scripts/illustrate.py (text2img)"
+python scripts/illustrate.py
