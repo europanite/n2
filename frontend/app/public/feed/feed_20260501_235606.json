@@ -1,18 +1,18 @@
 {
-  "updated_at": "2026-04-30T15:48:40Z",
+  "updated_at": "2026-05-01T14:56:06Z",
   "items": [
     {
       "id": "feed_20260501_235606",
       "kind": "event",
       "date": "2026-05-01",
-      "created_at": "2026-04-30T15:48:40Z",
+      "created_at": "2026-05-01T14:56:06Z",
       "text": "うんこが落ちました。\n英訳: The poop fell.",
       "tweet": "うんこが落ちました。\n英訳: The poop fell.",
       "place": "",
       "links": [],
       "avatar_image": "image/avatar/normal.png",
       "permalink": "./?post=feed_20260501_235606",
-      "legacy_id": "fixed-event-20260501_004840",
+      "legacy_id": "fixed-event-20260501_235606",
       "image": "image/feed_20260501_235606.png",
       "image_url": "image/feed_20260501_235606.png",
       "avatar_url": "image/avatar/normal.png",
