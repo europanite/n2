@@ -1,0 +1,17 @@
+{
+  "updated_at": "2026-05-01T21:54:57Z",
+  "items": [
+    {
+      "id": "fixed-event-20260502_065457",
+      "kind": "event",
+      "date": "2026-05-02",
+      "created_at": "2026-05-01T21:54:57Z",
+      "text": "日本語の例文。\n英訳: 英訳\n---------------\nうんこが大好きです。\nI love poop.",
+      "tweet": "日本語の例文。\n英訳: 英訳\n---------------\nうんこが大好きです。\nI love poop.",
+      "place": "",
+      "links": [],
+      "avatar_image": "image/avatar/normal.png",
+      "permalink": "./posts/fixed-event-20260502_065457/index.html"
+    }
+  ]
+}
