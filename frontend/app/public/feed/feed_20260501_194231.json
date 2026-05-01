@@ -1,0 +1,17 @@
+{
+  "updated_at": "2026-05-01T10:42:31Z",
+  "items": [
+    {
+      "id": "fixed-event-20260501_194231",
+      "kind": "event",
+      "date": "2026-05-01",
+      "created_at": "2026-05-01T10:42:31Z",
+      "text": "出力形式を確認しました。以下が指定された条件に従って日本語の例文と英訳を生成します。\n英訳: 1行目: うんこを Washing hands is more important than poop.\n2行目: washing hands is more important than poop.",
+      "tweet": "出力形式を確認しました。以下が指定された条件に従って日本語の例文と英訳を生成します。\n英訳: 1行目: うんこを Washing hands is more important than poop.\n2行目: washing hands is more important than poop.",
+      "place": "",
+      "links": [],
+      "avatar_image": "image/avatar/normal.png",
+      "permalink": "./posts/fixed-event-20260501_194231/index.html"
+    }
+  ]
+}
