@@ -100,8 +100,7 @@ def _render(t: str, *, place: str, core: str) -> str:
     s = (t or "").strip()
     if not s:
         return ""
-    p = place or "Yokosuka, Japan"
-    return s.replace("{place}", p).replace("{core}", core)
+    return s.replace("{core}", core)
 
 def _first_nonempty_line(text: str) -> str:
     for line in str(text or "").splitlines():

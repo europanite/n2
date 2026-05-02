@@ -56,7 +56,6 @@ def to_public_image_url(rel_path: str) -> str:
 
 def maybe_inject_image(item: dict[str, Any], feed_file: Path, public_dir: Path) -> dict[str, Any]:
     """
-    Yokosuka-service style fix:
     - For single-post snapshot files named feed_*.json, the filename stem is canonical.
     - If item.image / item.image_url is missing, but public/image/<stem>.png exists,
       inject that image path.
